@@ -1,27 +1,45 @@
-# Board Algorithm Game
+# 🎮 Board Algorithm Game
 
-**Projeto:** Jogo de tabuleiro gamificado para praticar técnicas de programação e algoritmos.
+**Desafie suas habilidades de programação e algoritmos em um jogo de tabuleiro gamificado!**
 
-## Fase 1 — Início e Preparação
-Objetivo: estabelecer a estrutura mínima da aplicação e expor a rota `/health`.
+## 📋 Sobre o Projeto
 
-### Tecnologias (Fase 1)
-- Python 3.11+
-- FastAPI (backend)
-- Uvicorn (ASGI server)
-- Pluggy (sistema de plugins - preparado)
-- Streamlit (frontend — fase 2)
-- supabase (banco — fases posteriores)
-- Docker (fase 5)
+Jogo interativo de tabuleiro para praticar técnicas de programação e resolução de problemas algorítmicos.
 
-### Como rodar localmente
-1. Crie virtualenv e ative:
-```powershell
+## 🚀 Status do Projeto
+
+**Fase 1 - Concluída ✅**
+- Estrutura básica do backend com FastAPI
+- Rota de health check (`/health`)
+- Sistema de plugins preparado
+- Documentação interativa da API
+
+## 🛠️ Tecnologias
+
+- **Python 3.11+**
+- **FastAPI** - Framework web moderno
+- **Uvicorn** - Servidor ASGI
+- **Pluggy** - Sistema de plugins
+
+## 💻 Como Executar
+
+### Pré-requisitos
+- Python 3.11 ou superior
+
+### Instalação
+
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/board-algorithm-game.git
+cd board-algorithm-game
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+source .venv/bin/activate  # Linux/Mac
+# .\.venv\Scripts\Activate.ps1  # Windows PowerShell
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+Acesso
+API: http://127.0.0.1:8000
 
-### Faze 2- Logica e implementação inicial.
-acesso ao docs depois de rodar localmente, use o doc pra testar a funcionalidade:
-http://127.0.0.1:8000/docs#/
+Documentação: http://127.0.0.1:8000/docs
 
-Os .json pra teste do backend está em testes.txt copie do body das requisições e teste as rotas
+Health Check: http://127.0.0.1:8000/health
