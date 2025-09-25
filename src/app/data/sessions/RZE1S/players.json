@@ -7,9 +7,9 @@
         "id": 1
     },
     {
-        "name": "RNG Player",
-        "email": "rng@email.com",
-        "password": "rng123",
+        "name": "Bruno",
+        "email": "bruno@email.com",
+        "password": "87654321",
         "pawn": "blue",
         "id": 2
     }

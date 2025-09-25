@@ -1,0 +1,16 @@
+[
+    {
+        "name": "Amanda",
+        "email": "amanda@email.com",
+        "password": "12345678",
+        "pawn": "red",
+        "id": 1
+    },
+    {
+        "name": "Luana",
+        "email": "Luana@gmail.com",
+        "password": "12345678",
+        "pawn": "blue",
+        "id": 2
+    }
+]

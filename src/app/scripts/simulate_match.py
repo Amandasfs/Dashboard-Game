@@ -1,129 +1,83 @@
-# scripts/simulate_match.py
+# src/app/scripts/simulate_existing_match.py
 import requests
 import random
 import time
 
 BASE_URL = "http://127.0.0.1:8000"
-TOTAL_HOUSES = 60
 
-session_code = None
-players = []
+# --- Configurações ---
+SESSION_CODE = input("Digite o código da sessão existente: ")
+TURN_DELAY = 0.5  # segundos entre jogadas
 
-def create_session():
-    global session_code
-    print("Criando sessão...")
-    res = requests.post(f"{BASE_URL}/launch/create", json={
-        "name": "Jogador Humano",
-        "email": "humano@email.com",
-        "password": "123",
-        "pawn": "blue"
-    })
-    data = res.json()
-    session_code = data["session_code"]
-    players.append(data["jogador"])
-    print("Sessão criada:", session_code)
-    print("Casas especiais:", data.get("special_houses"))
-
-def join_rnd_player():
-    print("Adicionando jogador RNG...")
-    res = requests.post(f"{BASE_URL}/launch/join/{session_code}", json={
-        "name": "Jogador RNG",
-        "email": "rng@email.com",
-        "password": "rng123",
-        "pawn": "red"
-    })
-    data = res.json()
-    for p in data["jogadores"]:
-        if p["email"] == "rng@email.com":
-            players.append(p)
-    print("Jogador RNG entrou.")
-
-def start_game():
-    print("Iniciando partida...")
-    res = requests.post(f"{BASE_URL}/launch/start/{session_code}")
-    print(res.json())
-
-def get_game_state():
-    res = requests.get(f"{BASE_URL}/launch/state/{session_code}")
-    return res.json()
-
-def play_turn_api(player):
-    pid = player["id"]
-    name = player["name"]
-    print(f"\nVez de {name} (id={pid})")
-
-    # 1) pedir carta
-    r = requests.post(f"{BASE_URL}/score/deal/{session_code}/{pid}")
-    if r.status_code != 200:
-        print("Erro ao pedir carta:", r.json())
-        return False
-    card = r.json()["card"]
-    print("Carta:", card["question"])
-    for k, v in card["options"].items():
-        print(f"{k}) {v}")
-    # Simula delay pequeno
-    time.sleep(random.uniform(0.1, 1.0))
-
-    # 2) responder
-    if name == "Jogador RNG":
-        # RNG: 20% skip, se não -> 70% acerta
-        if random.random() < 0.2:
-            payload = {"answer": "", "skip": True}
-        else:
-            if random.random() < 0.7:
-                # responde corretamente
-                # encontra a chave correta (servidor não retorna a key 'correct', então para simulação vamos usar heurística: pick B if 'Brasília' etc)
-                # Para simplicidade, vamos "adivinhar" com 70% de chance como acertar: enviamos 'b' ou 'a' dependendo do texto
-                # Melhor: quando deck é fixo do servidor, nós podemos inferir por frase. Aqui assumimos 70% acerto enviando 'b' (funciona para as cartas de exemplo).
-                payload = {"answer": "b", "skip": False}
-            else:
-                # envia resposta errada aleatória
-                payload = {"answer": random.choice(["a", "c", "d"]), "skip": False}
-        print(f"[RNG] Resposta: {payload['answer'] or 'SKIP'}")
+# --- Funções de API ---
+def get_state():
+    r = requests.get(f"{BASE_URL}/launch/state/{SESSION_CODE}")
+    if r.status_code == 200:
+        return r.json()
     else:
-        # Jogador humano: para teste, vamos responder sempre 'b' (ou poderia ler input)
-        payload = {"answer": "b", "skip": False}
-        print(f"[HUMANO SIM] Resposta: {payload['answer']}")
+        raise Exception("Erro ao buscar estado da sessão:", r.text)
 
-    r2 = requests.post(f"{BASE_URL}/score/answer/{session_code}/{pid}", json=payload)
-    if r2.status_code != 200:
-        print("Erro ao responder:", r2.json())
-        return False
-    res = r2.json()
-    print("Resultado:", res.get("ação"))
-    print("Nova posição:", res.get("posição_atual"))
-    print("Pontos:", res.get("pontos"))
-    if res.get("status") == "winner":
-        print(f"\n🏆 {player['name']} venceu por alcançar a casa final!")
-        return True
-    if res.get("status") == "finished_time":
-        print("\n⏳ Partida terminou por tempo.")
-        return True
-    return res.get("posição_atual", 0) >= TOTAL_HOUSES
+def deal_card(player_id):
+    payload = {"session_code": SESSION_CODE, "player_id": player_id}
+    r = requests.post(f"{BASE_URL}/score/deal", json=payload)
+    if r.status_code == 200:
+        return r.json()["card"]
+    else:
+        print(f"Erro ao pedir carta (Jogador {player_id}):", r.json())
+        return None
 
-def main():
-    create_session()
-    join_rnd_player()
-    start_game()
-    time.sleep(0.5)
+def answer_card(player_id, card, skip=False):
+    if not skip:
+        answer_key = random.choice(list(card["options"].keys()))
+    else:
+        answer_key = ""
+    payload = {
+        "session_code": SESSION_CODE,
+        "player_id": player_id,
+        "answer": answer_key,
+        "skip": skip
+    }
+    r = requests.post(f"{BASE_URL}/score/answer", json=payload)
+    if r.status_code == 200:
+        return r.json()
+    else:
+        print(f"Erro ao responder carta (Jogador {player_id}):", r.json())
+        return None
 
-    # Trava local dos jogadores (ordem retornada pelo state)
-    state = get_game_state()
-    players_local = state["players"]
-    game_state = state["game_state"]
-    order_ids = game_state["players_order"]
+# --- Simulação da partida ---
+def simulate_match():
+    print(f"Simulando partida existente: {SESSION_CODE}")
 
-    # loop enquanto não terminar
-    running = True
-    while running:
-        state = get_game_state()
-        current = state["game_state"]["current_turn"]
-        player = next(p for p in players if p["id"] == current)
-        fim = play_turn_api(player)
-        if fim:
-            running = False
+    while True:
+        state = get_state()
+        players = state["players"]
+        game_state = state["game_state"]
+        current_turn = game_state["current_turn"]
+
+        # Busca o jogador da vez
+        player = next((p for p in players if p["id"] == current_turn), None)
+        if not player:
+            print(f"Jogador {current_turn} não encontrado na sessão.")
             break
-        time.sleep(0.5)
 
+        pid = player["id"]
+        print(f"\nVez do Jogador {player['name']} (ID {pid})")
+
+        card = deal_card(pid)
+        if card:
+            print("Carta:", card["question"])
+            print("Opções:", card["options"])
+            result = answer_card(pid, card)
+            if result:
+                print("Resultado:", result)
+
+        # verifica se acabou a partida
+        if result and result.get("status") in ["winner", "finished_time"]:
+            print("\nPartida finalizada!")
+            break
+
+        time.sleep(TURN_DELAY)
+
+# --- Execução ---
 if __name__ == "__main__":
-    main()
+    simulate_match()

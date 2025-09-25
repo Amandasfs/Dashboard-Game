@@ -1,0 +1,44 @@
+{
+    "players_order": [],
+    "current_turn": null,
+    "positions": {
+        "1": 0
+    },
+    "scores": {
+        "1": 0
+    },
+    "lives": {
+        "1": 0
+    },
+    "total_houses": 60,
+    "special_houses": {
+        "ten_point_positive": [
+            7,
+            9,
+            42,
+            60
+        ],
+        "ten_point_traps": [
+            4,
+            14,
+            34,
+            35
+        ],
+        "life": [
+            13,
+            26
+        ],
+        "challenge_20": [
+            27,
+            31,
+            38,
+            58,
+            59
+        ]
+    },
+    "start_time": null,
+    "end_time": null,
+    "last_deal": {},
+    "used_questions": [],
+    "deck": []
+}

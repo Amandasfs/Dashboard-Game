@@ -7,7 +7,6 @@ import random
 import time
 
 router = APIRouter()
-
 BASE_DIR = "data/sessions"
 
 # --- MODELS ---
@@ -21,7 +20,6 @@ class PlayerAction(BaseModel):
     player_id: int
 
 class AnswerCard(PlayerAction, PlayAnswer):
-    """Inclui session_code, player_id, answer e skip"""
     pass
 
 # --- UTILS ---
@@ -30,18 +28,15 @@ def get_paths(session_code):
     session_path = os.path.join(BASE_DIR, session_code)
     if not os.path.exists(session_path):
         raise HTTPException(status_code=404, detail="Sessão não encontrada.")
-    
-    players_file = os.path.join(session_path, "players.json")
-    game_file = os.path.join(session_path, "game_state.json")
-    return players_file, game_file
+    return os.path.join(session_path, "players.json"), os.path.join(session_path, "game_state.json")
 
 def load_json(path):
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 def save_json(path, data):
-    with open(path, "w") as f:
-        json.dump(data, f, indent=4)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 def generate_deck():
     raw_cards = [
@@ -77,13 +72,14 @@ def generate_deck():
         random.shuffle(opts)
         key_map = dict(zip(["a", "b", "c", "d"], opts))
         correct_letter = next(k for k, v in key_map.items() if v == raw["correct_answer"])
+        # Define move_spaces: fácil=2, média=4, difícil=6 (RN-01)
+        move_spaces = random.choice([2, 4, 6])
         cards.append({
             "question": raw["question"],
             "options": key_map,
             "correct": correct_letter,
-            "move_spaces": random.choice([2, 4, 6])
+            "move_spaces": move_spaces
         })
-
     random.shuffle(cards)
     return cards
 
@@ -91,22 +87,18 @@ def generate_deck():
 
 @router.post("/deal")
 async def deal_card(action: PlayerAction):
-    session_code = action.session_code
-    player_id = action.player_id
-
-    players_file, game_file = get_paths(session_code)
-    players = load_json(players_file)
+    players_file, game_file = get_paths(action.session_code)
     game = load_json(game_file)
 
-    pid = str(player_id)
+    pid = str(action.player_id)
     if pid not in game["positions"]:
         raise HTTPException(status_code=400, detail="Jogador inválido.")
-    if game.get("current_turn") != player_id:
+    if game.get("current_turn") != action.player_id:
         raise HTTPException(status_code=400, detail="Não é a vez deste jogador.")
 
     now = int(time.time())
     if game.get("start_time") is None or now >= game.get("end_time", 0):
-        raise HTTPException(status_code=400, detail="Partida não iniciada ou já terminou por tempo.")
+        raise HTTPException(status_code=400, detail="Partida não iniciada ou já terminou.")
 
     deck = generate_deck()
     used = game.get("used_questions", [])
@@ -121,7 +113,6 @@ async def deal_card(action: PlayerAction):
     game.setdefault("last_deal", {})[pid] = {"card": card, "timestamp": now}
 
     save_json(game_file, game)
-
     return {
         "card": {
             "question": card["question"],
@@ -133,86 +124,123 @@ async def deal_card(action: PlayerAction):
 
 @router.post("/answer")
 async def answer_card(body: AnswerCard):
-    session_code = body.session_code
-    player_id = body.player_id
-
-    players_file, game_file = get_paths(session_code)
-    players = load_json(players_file)
+    players_file, game_file = get_paths(body.session_code)
     game = load_json(game_file)
 
-    pid = str(player_id)
+    pid = str(body.player_id)
     if pid not in game["positions"]:
         raise HTTPException(status_code=400, detail="Jogador inválido.")
 
     last = game.get("last_deal", {}).get(pid)
     if not last:
-        raise HTTPException(status_code=400, detail="Nenhuma carta foi entregue a este jogador.")
+        raise HTTPException(status_code=400, detail="Nenhuma carta entregue a este jogador.")
 
     now = int(time.time())
     if now - last["timestamp"] > 60:
-        body.skip = True
+        body.skip = True  # RN-02: timeout → voltar 1 casa
 
     card = last["card"]
-    move = 0
-    action_msg = ""
     current_pos = game["positions"][pid]
-    gained_points = 0
+    gained_points, move = 0, 0
+    action_msg = ""
 
+    # --- RN aplicação ---
     if body.skip:
         move = -1 if current_pos > 0 else 0
-        action_msg = "Jogador pulou/timeout: voltou 1 casa."
+        action_msg = "Jogador não respondeu / timeout: voltou 1 casa. (RN-02)"
     else:
-        answer_key = body.answer.lower().strip()
-        if answer_key == card["correct"]:
-            move = card["move_spaces"]
-            action_msg = f"Acertou! Avançou {move} casas."
-            gained_points += move
-        else:
-            penalty = card["move_spaces"] // 2
-            move = -penalty if current_pos > 0 else 0
-            action_msg = f"Errou! Voltou {abs(move)} casas."
+        ans = body.answer.lower().strip()
+        correct = (ans == card["correct"])
 
+        # Verifica se está em casa especial
+        special = game.get("special_houses", {})
+        is_special = current_pos in (
+            special.get("ten_point_positive", [])
+            + special.get("ten_point_traps", [])
+            + special.get("life", [])
+            + special.get("challenge_20", [])
+        )
+
+        # Vida extra ativa (RN-06)
+        has_life = game["lives"].get(pid, 0) > 0
+
+        if correct:
+            # RN-01: acertou → anda move_spaces
+            move = card["move_spaces"]
+            gained_points += move
+            action_msg = f"Acertou! Avançou {move} casas. (RN-01)"
+        else:
+            if is_special:
+                # RN-07: errar em casa especial não gera punição
+                move = 0
+                action_msg = "Errou em casa especial: sem punição. (RN-07)"
+            elif has_life:
+                # Gasta vida para anular punição
+                game["lives"][pid] -= 1
+                move = 0
+                action_msg = "Errou, mas usou a vida extra: sem punição. (RN-06)"
+            else:
+                # RN-03: erro normal → volta metade
+                penalty = card["move_spaces"] // 2
+                move = -penalty if current_pos > 0 else 0
+                action_msg = f"Errou! Voltou {abs(move)} casas. (RN-03)"
+
+    # Atualiza posição
     new_pos = max(0, min(current_pos + move, game["total_houses"]))
     game["positions"][pid] = new_pos
     game["scores"][pid] = game["scores"].get(pid, 0) + gained_points
 
-    if str(new_pos) in [str(h) for h in game.get("special_houses", [])]:
-        game["scores"][pid] += 5
-        action_msg += " Caiu em casa especial: +5 pontos."
+    # --- RN casas especiais ---
+    specials = game.get("special_houses", {})
+    if new_pos in specials.get("ten_point_positive", []):
+        game["scores"][pid] += 10
+        action_msg += " Caiu em casa +10 pontos. (RN-05)"
+    elif new_pos in specials.get("ten_point_traps", []):
+        action_msg += " Caiu em casa pegadinha: nada acontece. (RN-05)"
+    elif new_pos in specials.get("life", []):
+        # RN-08: só ganha se parar exatamente
+        game["lives"][pid] = game["lives"].get(pid, 0) + 1
+        action_msg += " Ganhou uma vida extra! (RN-06, RN-08)"
+    elif new_pos in specials.get("challenge_20", []):
+        if not body.skip and body.answer.lower().strip() == card["correct"]:
+            game["scores"][pid] += 20
+            action_msg += " Acertou desafio: +20 pontos! (RN-04)"
+        else:
+            action_msg += " Desafio falhado: sem bônus. (RN-04, RN-07)"
 
+    # Limpa carta
     if pid in game.get("last_deal", {}):
         del game["last_deal"][pid]
 
-    # Avança turno
+    # Passa turno
     order = game["players_order"]
-    current_index = order.index(player_id)
-    next_index = (current_index + 1) % len(order)
+    next_index = (order.index(body.player_id) + 1) % len(order)
     game["current_turn"] = order[next_index]
 
-    # Verifica fim
+    # Fim da partida
     if now >= game.get("end_time", 0):
         save_json(game_file, game)
         return {
             "ação": action_msg,
-            "posição_atual": new_pos,
+            "posição": new_pos,
             "pontos": game["scores"][pid],
-            "status": "finished_time",
-            "message": "Partida terminou por tempo. Verifique pontuações."
+            "status": "finished_time"
         }
     if new_pos >= game["total_houses"]:
         save_json(game_file, game)
         return {
             "ação": action_msg,
-            "posição_atual": new_pos,
+            "posição": new_pos,
             "pontos": game["scores"][pid],
             "status": "winner",
-            "message": f"Jogador {player_id} alcançou a casa final!"
+            "message": f"Jogador {body.player_id} venceu a partida!"
         }
 
     save_json(game_file, game)
     return {
         "ação": action_msg,
-        "posição_atual": new_pos,
+        "posição": new_pos,
         "pontos": game["scores"][pid],
-        "próximo_jogador": game["current_turn"]
+        "vidas": game["lives"][pid],
+        "próximo": game["current_turn"]
     }
