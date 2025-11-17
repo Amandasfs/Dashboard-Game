@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Home - Pixel Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('https://art.pixilart.com/sr5z2b4d27f3c8aws3.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .home-container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        
+        /* Título */
+        .title {
+            color: #6aff6a;
+            font-size: 24px;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b;
+            letter-spacing: 1px;
+            animation: title-glow 2s infinite alternate;
+        }
+        
+        @keyframes title-glow {
+            0% { text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b; }
+            100% { text-shadow: 3px 3px 0 #000, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; }
+        }
+        
+        /* Caixa de perfil */
+        .profile-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 4px solid #6aff6a;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 40px;
+            box-shadow: 0 0 15px #6aff6a, inset 0 0 10px rgba(106, 255, 106, 0.3);
+            position: relative;
+        }
+        
+        .profile-box::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #6aff6a;
+            border-radius: 16px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border: 4px solid #00d0ff;
+            border-radius: 8px;
+            image-rendering: pixelated;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-number {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #ff6b6b;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border: 2px solid white;
+        }
+        
+        #usernameDisplay {
+            color: #00d0ff;
+            font-size: 18px;
+            text-shadow: 0 0 5px #00d0ff;
+            margin-bottom: 15px;
+        }
+        
+        /* Seletor de Avatar */
+        .avatar-selector {
+            margin: 20px 0;
+        }
+        
+        .selector-label {
+            color: #6aff6a;
+            font-size: 12px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .avatar-range {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .range-slider {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #00d0ff;
+            border-radius: 10px;
+            outline: none;
+            margin: 15px 0;
+            /* Corrigindo o problema do vendor prefix */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            border: 3px solid white;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+        }
+        
+        .range-slider::-moz-range-thumb {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            border: 3px solid white;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+            /* Corrigindo para Firefox */
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        .range-slider::-webkit-slider-track {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+        
+        .range-slider::-moz-range-track {
+            -moz-appearance: none;
+            appearance: none;
+            background: transparent;
+            border: none;
+        }
+        
+        .avatar-previews {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 0 10px;
+        }
+        
+        .avatar-preview {
+            width: 50px;
+            height: 50px;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            image-rendering: pixelated;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px;
+        }
+        
+        .avatar-preview:hover {
+            transform: scale(1.1);
+            border-color: #6aff6a;
+        }
+        
+        .avatar-preview.active {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px #ff6b6b;
+        }
+        
+        .avatar-names {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 8px;
+            color: #00d0ff;
+        }
+        
+        .avatar-name {
+            width: 50px;
+            text-align: center;
+        }
+        
+        /* Menu de opções */
+        .menu-box {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            align-items: center;
+        }
+        
+        .btn-pixel {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #ff6b6b;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 2px 2px 0 #000;
+        }
+        
+        .btn-pixel::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #ff6b6b;
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .btn-pixel:hover {
+            background: rgba(255, 107, 107, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn-pixel:active {
+            transform: translateY(-2px);
+        }
+        
+        /* Elementos decorativos pixelados */
+        .pixel-corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            image-rendering: pixelated;
+        }
+        
+        .profile-box .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #6aff6a;
+        }
+        
+        .profile-box .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #6aff6a;
+        }
+        
+        .profile-box .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #6aff6a;
+        }
+        
+        .profile-box .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #6aff6a;
+        }
+        
+        .btn-pixel .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+        
+        /* Animações */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .avatar {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .avatar.pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 18px;
+            }
+            
+            #usernameDisplay {
+                font-size: 14px;
+            }
+            
+            .btn-pixel {
+                font-size: 12px;
+                padding: 15px;
+            }
+            
+            .avatar {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .avatar-preview {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .avatar-names {
+                font-size: 7px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .title {
+                font-size: 16px;
+            }
+            
+            .profile-box {
+                padding: 15px;
+            }
+            
+            .btn-pixel {
+                font-size: 10px;
+                padding: 12px;
+            }
+            
+            .avatar {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .avatar-preview {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .avatar-names {
+                font-size: 6px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="home-container">
+
+        <h1 class="title">Bem-vinda ao Pixel Game!</h1>
+
+        <div class="profile-box">
+            <div class="pixel-corner corner-tl"></div>
+            <div class="pixel-corner corner-tr"></div>
+            <div class="pixel-corner corner-bl"></div>
+            <div class="pixel-corner corner-br"></div>
+
+            <h2 id="usernameDisplay">Jogador</h2>
+            
+            <div class="avatar-selector">
+                <label class="selector-label">ESCOLHA SEU AVATAR:</label>
+                <div class="avatar-range">
+                    <input type="range" min="1" max="4" value="1" class="range-slider" id="avatarRange">
+                    <div class="avatar-previews">
+                        <img src="{{ url_for('static', filename='img/avatars/avatar_1.png') }}" class="avatar-preview active" data-avatar="1" alt="Avatar 1">
+                        <img src="{{ url_for('static', filename='img/avatars/avatar_2.png') }}" class="avatar-preview" data-avatar="2" alt="Avatar 2">
+                        <img src="{{ url_for('static', filename='img/avatars/avatar_3.png') }}" class="avatar-preview" data-avatar="3" alt="Avatar 3">
+                        <img src="{{ url_for('static', filename='img/avatars/avatar_4.png') }}" class="avatar-preview" data-avatar="4" alt="Avatar 4">
+                    </div>
+                    <div class="avatar-names">
+                        <span class="avatar-name">GUERREIRO</span>
+                        <span class="avatar-name">MAGO</span>
+                        <span class="avatar-name">ARQUEIRO</span>
+                        <span class="avatar-name">ASSASSINO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-box">
+            <button class="btn-pixel" id="btnCriarPartida">
+                <div class="pixel-corner corner-tl"></div>
+                <div class="pixel-corner corner-tr"></div>
+                <div class="pixel-corner corner-bl"></div>
+                <div class="pixel-corner corner-br"></div>
+                🎲 Criar Partida
+            </button>
+
+            <button class="btn-pixel" id="btnEntrarPartida">
+                <div class="pixel-corner corner-tl"></div>
+                <div class="pixel-corner corner-tr"></div>
+                <div class="pixel-corner corner-bl"></div>
+                <div class="pixel-corner corner-br"></div>
+                🔑 Entrar em Partida
+            </button>
+        </div>
+
+    </div>
+
+  <script type="module">
+    import { goTo } from "{{ url_for('static', filename='js/api/index.js') }}";
+
+    // ============================
+    // USERNAME
+    // ============================
+    const username =
+        new URLSearchParams(window.location.search).get("username") ||
+        localStorage.getItem("username") ||
+        "Jogador";
+
+    document.getElementById("usernameDisplay").innerText = username;
+
+
+    // ============================
+    // AVATARES
+    // ============================
+    const avatarRange = document.getElementById("avatarRange");
+    const avatarPreviews = document.querySelectorAll(".avatar-preview");
+
+    // Avatar salvo localmente
+    let selectedAvatar = parseInt(localStorage.getItem("selectedAvatar")) || 1;
+
+
+    function updateAvatar(avatarId) {
+        selectedAvatar = avatarId;
+
+        // Atualiza visual
+        avatarPreviews.forEach(preview => {
+            preview.classList.toggle("active", parseInt(preview.dataset.avatar) === avatarId);
+        });
+
+        avatarRange.value = avatarId;
+
+        // Salva para não perder ao recarregar
+        localStorage.setItem("selectedAvatar", avatarId);
+    }
+
+    // Quando mexe no range
+    avatarRange.addEventListener("input", () =>
+        updateAvatar(parseInt(avatarRange.value))
+    );
+
+    // Quando clica num avatar
+    avatarPreviews.forEach(preview => {
+        preview.addEventListener("click", () =>
+            updateAvatar(parseInt(preview.dataset.avatar))
+        );
+    });
+
+    // Carrega avatar salvo ao abrir a página
+    updateAvatar(selectedAvatar);
+
+
+    // ============================
+    // BOTÕES → INTEGRAÇÃO BACKEND
+    // ============================
+    document.getElementById("btnCriarPartida").onclick = () =>
+        goTo("/criar-partida", {
+            username,
+            avatar_id: selectedAvatar   // <── Backend novo usa avatar_id
+        });
+
+    document.getElementById("btnEntrarPartida").onclick = () =>
+        goTo("/token", {
+            username,
+            avatar_id: selectedAvatar   // <── Mesmo ajuste aqui
+        });
+
+
+    // Disponível globalmente (se precisar)
+    window.goTo = goTo;
+</script>
+</body>
+</html>

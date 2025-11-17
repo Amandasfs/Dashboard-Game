@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Sala de Espera - Pixel Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* ==== Estilos (mantidos do seu template) ==== */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('https://art.pixilart.com/sr5z97b2266c6daws3.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container { width: 100%; max-width: 800px; text-align: center; }
+        .title { color: #ff6b6b; font-size: 28px; margin-bottom: 40px; text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b; animation: title-glow 2s infinite alternate; }
+        @keyframes title-glow { 0% { text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b; } 100% { text-shadow: 3px 3px 0 #000, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; } }
+        .waiting-room {
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #00d0ff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 20px #00d0ff, inset 0 0 15px rgba(0, 208, 255, 0.3);
+            position: relative;
+            animation: room-glow 3s infinite;
+        }
+        @keyframes room-glow { 0% { box-shadow: 0 0 20px #00d0ff, inset 0 0 15px rgba(0,208,255,0.3); } 50% { box-shadow:0 0 30px #00d0ff, 0 0 40px #00d0ff, inset 0 0 15px rgba(0,208,255,0.5);} 100% { box-shadow:0 0 20px #00d0ff, inset 0 0 15px rgba(0,208,255,0.3);} }
+        .waiting-room::before { content:''; position:absolute; top:-10px; left:-10px; right:-10px; bottom:-10px; border:2px solid #00d0ff; border-radius:16px; z-index:-1; opacity:0.5; }
+        .match-info { background: rgba(106,255,106,0.1); border:3px solid #6aff6a; border-radius:8px; padding:20px; margin-bottom:30px; text-shadow:0 0 5px #6aff6a; }
+        .match-token { color: #6aff6a; font-size:18px; margin-bottom:10px; }
+        .match-settings { color:#00d0ff; font-size:12px; display:flex; justify-content:space-around; flex-wrap:wrap; gap:15px; }
+        .setting-item { background: rgba(0,0,0,0.5); padding:10px 15px; border-radius:6px; border:2px solid #ff6b6b; }
+        .players-section { margin-bottom:30px; }
+        .section-title { color:#ff6b6b; font-size:16px; margin-bottom:20px; text-shadow:0 0 5px #ff6b6b; }
+        .players-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:15px; margin-bottom:20px; }
+        .player-card { background: rgba(0,0,0,0.6); border:3px solid #ffd700; border-radius:8px; padding:15px; text-align:center; position:relative; transition:all 0.3s ease; }
+        .player-card.ready { border-color:#6aff6a; background: rgba(106,255,106,0.1); }
+        .player-card.host::after { content:'👑'; position:absolute; top:-10px; right:-10px; font-size:16px; background:#ffd700; border-radius:50%; width:25px; height:25px; display:flex; align-items:center; justify-content:center; }
+        .player-avatar { width:60px; height:60px; border:3px solid #00d0ff; border-radius:8px; margin:0 auto 10px; image-rendering:pixelated; background:rgba(0,0,0,0.8); padding:5px; }
+        .player-name { color:#00d0ff; font-size:12px; margin-bottom:5px; text-shadow:0 0 5px #00d0ff; }
+        .player-status { color:#6aff6a; font-size:10px; margin-bottom:5px; }
+        .player-status.waiting { color:#ff6b6b; }
+        .controls { display:flex; gap:15px; justify-content:center; flex-wrap:wrap; }
+        .btn-pixel { padding:15px 25px; font-family:'Press Start 2P',cursive; font-size:12px; background: rgba(0,0,0,0.8); border:4px solid; color:white; cursor:pointer; border-radius:8px; transition:all 0.3s; position:relative; overflow:hidden; min-width:160px; }
+        .btn-pixel::before { content:''; position:absolute; top:-10px; left:-10px; right:-10px; bottom:-10px; border:2px solid; border-radius:12px; z-index:-1; opacity:0.5; }
+        .btn-ready { border-color:#6aff6a; }
+        .btn-ready::before { border-color:#6aff6a; }
+        .btn-ready.ready { background: rgba(106,255,106,0.3); border-color:#4cd14c; }
+        .btn-copy { border-color:#00d0ff; }
+        .btn-copy::before { border-color:#00d0ff; }
+        .btn-leave { border-color:#ff6b6b; }
+        .btn-leave::before { border-color:#ff6b6b; }
+        .countdown { margin-top:20px; padding:15px; background:rgba(255,107,107,0.2); border:3px solid #ff6b6b; border-radius:8px; font-size:16px; color:#ff6b6b; text-shadow:0 0 5px #ff6b6b; display:none; }
+        @media (max-width:768px) { .title{font-size:20px;} .waiting-room{padding:20px;} .players-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));} .btn-pixel{font-size:10px;padding:12px 20px; min-width:140px;} .match-settings{flex-direction:column;align-items:center;} }
+        @media (max-width:480px) { .title{font-size:18px;} .waiting-room{padding:15px;} .players-grid{grid-template-columns:1fr;} .controls{flex-direction:column;align-items:center;} .btn-pixel{width:100%; max-width:200px;} }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h1 class="title">🎮 Sala de Espera</h1>
+    <div class="waiting-room">
+        <div class="match-info">
+            <div class="match-token" id="matchToken">Token: ABC123</div>
+            <div class="match-settings">
+                <div class="setting-item">👥 Máx. Jogadores: <span id="maxPlayers">4</span></div>
+                <div class="setting-item">⏱️ Duração: <span id="gameDuration">15</span> min</div>
+                <div class="setting-item">🎯 Modo: <span id="gameMode">Competitivo</span></div>
+            </div>
+        </div>
+        <div class="players-section">
+            <h3 class="section-title">👥 Jogadores na Sala</h3>
+            <div class="players-grid" id="playersList"></div>
+            <div class="players-count" id="playersCount">
+                Aguardando jogadores<span class="loading-dots"></span>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn-pixel btn-ready" id="readyBtn">✅ PRONTO</button>
+            <button class="btn-pixel btn-copy" id="copyBtn">📋 Copiar Token</button>
+            <button class="btn-pixel btn-leave" id="leaveBtn">🚪 Sair</button>
+        </div>
+        <div class="countdown" id="countdown">
+            Iniciando em: <span id="countdownNumber">5</span>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script type="module">
+import { initSocket } from "/static/js/socket.js";
+
+// =================== DADOS DO JOGADOR ===================
+const token = new URLSearchParams(window.location.search).get("token");
+const username = localStorage.getItem("username") || "Jogador";
+const avatar_id = parseInt(localStorage.getItem("selectedAvatar") || 1);
+if (!token || !username) window.location.href = "/home";
+
+// =================== ELEMENTOS ===================
+const playersList = document.getElementById('playersList');
+const playersCount = document.getElementById('playersCount');
+const readyBtn = document.getElementById('readyBtn');
+const countdown = document.getElementById('countdown');
+const countdownNumber = document.getElementById('countdownNumber');
+
+let isReady = false;
+let countdownInterval = null;
+
+// =================== SOCKET.IO ===================
+const socket = initSocket(token, username, avatar_id);
+
+// =================== EVENTOS SOCKET.IO ===================
+
+// Atualização da sala
+socket.on("atualizacao_sala", (data) => {
+    const players = data.players || [];
+    playersList.innerHTML = "";
+    players.forEach(p => {
+        const card = document.createElement("div");
+        card.className = `player-card ${p.isReady ? 'ready' : ''} ${p.isHost ? 'host' : ''}`;
+        card.innerHTML = `
+            <div class="player-avatar"><img src="${p.avatar_url || '/static/img/default-avatar.png'}" width="60" height="60"/></div>
+            <div class="player-name">${p.username || p.name}</div>
+            <div class="player-status ${p.isReady ? '' : 'waiting'}">
+                ${p.isReady ? '✅ PRONTO' : '⏳ AGUARDANDO'}
+            </div>
+        `;
+        playersList.appendChild(card);
+    });
+    const readyCount = players.filter(p => p.isReady).length;
+    playersCount.textContent = `${players.length}/${data.settings?.max_jogadores || 4} jogadores (${readyCount} prontos)`;
+});
+
+// Partida iniciada → vai pro tabuleiro
+socket.on("iniciar_partida", (data) => {
+    console.log("Partida iniciada:", data);
+    window.location.href = `/tabuleiro?token=${game_code}`;
+});
+
+// Erros do socket
+socket.on("error", (data) => {
+    console.error("Socket error:", data);
+});
+
+// =================== BOTÃO PRONTO ===================
+readyBtn.addEventListener("click", () => {
+    isReady = !isReady;
+    readyBtn.classList.toggle("ready", isReady);
+    readyBtn.textContent = isReady ? "❌ CANCELAR" : "✅ PRONTO";
+
+    // Emite status pronto para o backend
+    socket.emit("player_ready", { username, token, ready: isReady });
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Criar Partida - Pixel Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('https://art.pixilart.com/sr5z7c2b836e50aws3.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        /* Título */
+        .title {
+            color: #ff6b6b;
+            font-size: 24px;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b;
+            letter-spacing: 1px;
+            animation: title-glow 2s infinite alternate;
+        }
+        
+        @keyframes title-glow {
+            0% { text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b; }
+            100% { text-shadow: 3px 3px 0 #000, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; }
+        }
+        
+        /* Caixa principal */
+        .box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 4px solid #00d0ff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 15px #00d0ff, inset 0 0 10px rgba(0, 208, 255, 0.3);
+            position: relative;
+            animation: box-glow 3s infinite;
+        }
+        
+        @keyframes box-glow {
+            0% { box-shadow: 0 0 15px #00d0ff, inset 0 0 10px rgba(0, 208, 255, 0.3); }
+            50% { box-shadow: 0 0 25px #00d0ff, 0 0 30px #00d0ff, inset 0 0 10px rgba(0, 208, 255, 0.5); }
+            100% { box-shadow: 0 0 15px #00d0ff, inset 0 0 10px rgba(0, 208, 255, 0.3); }
+        }
+        
+        .box::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #00d0ff;
+            border-radius: 16px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        /* Labels e controles */
+        .label {
+            color: #6aff6a;
+            font-size: 12px;
+            margin: 20px 0 8px 0;
+            display: block;
+            text-align: left;
+        }
+        
+        .username {
+            color: #00d0ff;
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #00d0ff;
+            border-radius: 6px;
+            text-shadow: 0 0 5px #00d0ff;
+        }
+        
+        .select-pixel, .input-pixel {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 12px;
+            font-family: 'Press Start 2P', cursive;
+            border: 3px solid #ff6b6b;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 6px;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        .select-pixel {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        
+        .input-pixel:focus, .select-pixel:focus {
+            outline: none;
+            box-shadow: 0 0 10px #ff6b6b;
+            border-color: #ff6b6b;
+        }
+        
+        /* Botão */
+        .btn-pixel {
+            width: 100%;
+            padding: 20px;
+            margin-top: 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #ff6b6b;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 2px 2px 0 #000;
+        }
+        
+        .btn-pixel::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #ff6b6b;
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .btn-pixel:hover {
+            background: rgba(255, 107, 107, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn-pixel:active {
+            transform: translateY(-2px);
+        }
+        
+        /* Feedback */
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 10px;
+            min-height: 20px;
+            transition: all 0.3s;
+        }
+        
+        .feedback.success {
+            background: rgba(106, 255, 106, 0.2);
+            border: 2px solid #6aff6a;
+            color: #6aff6a;
+            text-shadow: 0 0 5px #6aff6a;
+        }
+        
+        .feedback.error {
+            background: rgba(255, 77, 77, 0.2);
+            border: 2px solid #ff4d4d;
+            color: #ff4d4d;
+            text-shadow: 0 0 5px #ff4d4d;
+        }
+        
+        /* Elementos decorativos pixelados */
+        .pixel-corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            image-rendering: pixelated;
+        }
+        
+        .box .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #00d0ff;
+        }
+        
+        .box .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #00d0ff;
+        }
+        
+        .box .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #00d0ff;
+        }
+        
+        .box .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #00d0ff;
+        }
+        
+        .btn-pixel .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+        
+        /* Grupo de inputs numéricos */
+        .number-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .input-group {
+            text-align: left;
+        }
+        
+        .input-group .label {
+            margin-bottom: 8px;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 18px;
+            }
+            
+            .box {
+                padding: 20px;
+            }
+            
+            .btn-pixel {
+                font-size: 12px;
+                padding: 15px;
+            }
+            
+            .username {
+                font-size: 12px;
+            }
+            
+            .number-inputs {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .title {
+                font-size: 16px;
+            }
+            
+            .box {
+                padding: 15px;
+            }
+            
+            .btn-pixel {
+                font-size: 10px;
+                padding: 12px;
+            }
+            
+            .select-pixel, .input-pixel {
+                font-size: 10px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="title">🎲 Criar Partida</h1>
+
+        <div class="box">
+            <div class="pixel-corner corner-tl"></div>
+            <div class="pixel-corner corner-tr"></div>
+            <div class="pixel-corner corner-bl"></div>
+            <div class="pixel-corner corner-br"></div>
+
+            <label class="label">Jogador:</label>
+            <p id="usernameDisplay" class="username">Carregando...</p>
+
+            <label class="label">Modo de Jogo:</label>
+            <select id="modo" class="select-pixel">
+                <option value="multi">🎮 Contra outros jogadores</option>
+                <option value="bot">🤖 Contra bots</option>
+            </select>
+
+            <div class="number-inputs">
+                <div class="input-group">
+                    <label class="label">Máximo de jogadores:</label>
+                    <input type="number" id="maxJogadores" min="1" max="8" value="4" class="input-pixel">
+                </div>
+                
+                <div class="input-group">
+                    <label class="label">Duração (minutos):</label>
+                    <input type="number" id="duracao" min="5" max="60" value="15" class="input-pixel">
+                </div>
+            </div>
+
+            <button class="btn-pixel" id="btnCriar">
+                <div class="pixel-corner corner-tl"></div>
+                <div class="pixel-corner corner-tr"></div>
+                <div class="pixel-corner corner-bl"></div>
+                <div class="pixel-corner corner-br"></div>
+                ✨ Criar Partida
+            </button>
+
+            <p id="feedback" class="feedback"></p>
+        </div>
+    </div>
+
+    <script type="module">
+    import { createGame, showError, goTo } from "{{ url_for('static', filename='js/api/index.js') }}";
+
+    // ============================
+    // CARREGAR USER E AVATAR
+    // ============================
+    const username =
+        new URLSearchParams(window.location.search).get("username") ||
+        localStorage.getItem("username") ||
+        "Jogador";
+
+    const avatar_id =
+        parseInt(new URLSearchParams(window.location.search).get("avatar_id")) ||
+        parseInt(localStorage.getItem("selectedAvatar")) ||
+        1;
+
+    document.getElementById("usernameDisplay").innerText = username;
+
+
+    // ============================
+    // BOTÃO CRIAR PARTIDA
+    // ============================
+    document.getElementById("btnCriar").onclick = async () => {
+        const maxJogadores = parseInt(document.getElementById("maxJogadores").value);
+        const duracao = parseInt(document.getElementById("duracao").value);
+        const modo = document.getElementById("modo").value;
+
+        const feedback = document.getElementById("feedback");
+        feedback.textContent = "🔄 Criando partida...";
+        feedback.className = "feedback";
+
+        try {
+            // Chamada correta para o backend atual
+            const data = await createGame(
+                {
+                    username: username,
+                    avatar_id: avatar_id
+                },
+                maxJogadores
+            );
+
+            feedback.textContent = "✅ Partida criada! Código: " + data.codigo;
+            feedback.className = "feedback success";
+
+            document.getElementById("btnCriar").disabled = true;
+            document.getElementById("btnCriar").innerHTML = "🎉 Partida Criada!";
+
+            // Redirecionamento usando função goTo (fluxo correto)
+            setTimeout(() => {
+                window.location.href = `/espera?token=${data.codigo}&username=${username}&avatar_id=${avatar_id}`;
+            }, 1200);
+
+
+        } catch (err) {
+            showError("feedback", "❌ " + err);
+        }
+    };
+
+
+    // ============================
+    // VALIDAÇÃO DOS INPUTS
+    // ============================
+    document.getElementById("maxJogadores").addEventListener("change", function () {
+        let value = parseInt(this.value);
+        if (value < 1) this.value = 1;
+        if (value > 8) this.value = 8;
+    });
+
+    document.getElementById("duracao").addEventListener("change", function () {
+        let value = parseInt(this.value);
+        if (value < 5) this.value = 5;
+        if (value > 60) this.value = 60;
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Jogo de Tabuleiro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('https://art.pixilart.com/sr5z97b2266c6daws3.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+        }
+        
+        /* Caixa de login */
+        .login-box {
+            width: 100%;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 4px solid #6aff6a;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 0 15px #6aff6a, inset 0 0 10px rgba(106, 255, 106, 0.3);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #6aff6a;
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        h2 {
+            color: #6aff6a;
+            margin-bottom: 25px;
+            font-size: 20px;
+            text-shadow: 0 0 5px #6aff6a;
+            letter-spacing: 1px;
+        }
+        
+        /* Campos de entrada */
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 12px;
+            font-family: 'Press Start 2P', cursive;
+            border: 3px solid #6aff6a;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 8px #6aff6a;
+        }
+        
+        input::placeholder {
+            color: #aaa;
+        }
+        
+        /* Botões */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            font-family: 'Press Start 2P', cursive;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+        
+        .btn-primary {
+            background: #6aff6a;
+            color: black;
+        }
+        
+        .btn-primary:hover {
+            background: #4cd14c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #00d0ff;
+            color: black;
+        }
+        
+        .btn-secondary:hover {
+            background: #00a6d6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Modal de pergaminho */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-modal {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect x="10" y="10" width="380" height="180" rx="10" ry="10" fill="%23f5e6ca" stroke="%238B4513" stroke-width="4"/><path d="M10,20 Q200,5 390,20 L390,180 Q200,195 10,180 Z" fill="%23f5e6ca" stroke="%238B4513" stroke-width="2"/></svg>') no-repeat center center;
+            background-size: contain;
+            width: 90%;
+            max-width: 400px;
+            height: 200px;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #5d4037;
+            position: relative;
+            image-rendering: pixelated;
+        }
+        
+        .scroll-content {
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .scroll-content p {
+            margin-bottom: 15px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .scroll-btn {
+            background: #8B4513;
+            color: #f5e6ca;
+            border: 2px solid #5d4037;
+            padding: 8px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .scroll-btn:hover {
+            background: #a0522d;
+        }
+        
+        /* Elementos decorativos pixelados */
+        .pixel-border {
+            border-style: solid;
+            border-width: 4px;
+            border-image: repeating-linear-gradient(45deg, #6aff6a, #6aff6a 4px, transparent 4px, transparent 8px) 10;
+        }
+        
+        .pixel-corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #6aff6a;
+            image-rendering: pixelated;
+        }
+        
+        .corner-tl {
+            top: -8px;
+            left: -8px;
+        }
+        
+        .corner-tr {
+            top: -8px;
+            right: -8px;
+        }
+        
+        .corner-bl {
+            bottom: -8px;
+            left: -8px;
+        }
+        
+        .corner-br {
+            bottom: -8px;
+            right: -8px;
+        }
+        
+        /* Animações */
+        @keyframes pixel-glow {
+            0% { box-shadow: 0 0 5px #6aff6a; }
+            50% { box-shadow: 0 0 15px #6aff6a, 0 0 20px #6aff6a; }
+            100% { box-shadow: 0 0 5px #6aff6a; }
+        }
+        
+        .login-box {
+            animation: pixel-glow 3s infinite;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 480px) {
+            .login-box {
+                padding: 20px;
+            }
+            
+            h2 {
+                font-size: 16px;
+            }
+            
+            input, .btn {
+                font-size: 10px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="login-box">
+            <div class="pixel-corner corner-tl"></div>
+            <div class="pixel-corner corner-tr"></div>
+            <div class="pixel-corner corner-bl"></div>
+            <div class="pixel-corner corner-br"></div>
+            
+            <h2>LOGIN</h2>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <input id="username" type="text" placeholder="Usuário" required>
+                </div>
+                
+                <div class="input-group">
+                    <input id="password" type="password" placeholder="Senha" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">ENTRAR</button>
+                
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='/register'">
+                    NÃO TENHO CONTA
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de pergaminho para mensagens -->
+    <div class="modal-overlay" id="messageModal">
+        <div class="scroll-modal">
+            <div class="scroll-content">
+                <p id="modalMessage">Mensagem de exemplo</p>
+            </div>
+            <button class="scroll-btn" id="modalClose">FECHAR</button>
+        </div>
+    </div>
+
+       <script>
+        // Função para mostrar mensagens no modal
+        function showError(type, message) {
+            const modal = document.getElementById('messageModal');
+            const modalMessage = document.getElementById('modalMessage');
+            modalMessage.textContent = message;
+            modal.classList.add('active');
+        }
+
+        // Fechar modal
+        document.getElementById('modalClose').addEventListener('click', () => {
+            document.getElementById('messageModal').classList.remove('active');
+        });
+        document.getElementById('messageModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+        });
+
+        // Login real usando backend
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError("error", data.error || "Usuário ou senha incorretos");
+                    return;
+                }
+
+                // Salva no navegador
+                localStorage.setItem("username", data.username);
+
+                // Redireciona para a home
+                window.location.href = "/home";
+
+            } catch (err) {
+                showError("error", "Erro de conexão com o servidor");
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>

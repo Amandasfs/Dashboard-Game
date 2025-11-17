@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Tabuleiro - Pixel Game</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('https://art.pixilart.com/sr5z97b2266c6daws3.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            align-items: start;
+        }
+
+        /* Header */
+        .game-header {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .game-title {
+            color: #ff6b6b;
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b;
+            animation: title-glow 2s infinite alternate;
+        }
+
+        @keyframes title-glow {
+            0% { text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b; }
+            100% { text-shadow: 3px 3px 0 #000, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; }
+        }
+
+        .turn-info {
+            color: #6aff6a;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border: 3px solid #6aff6a;
+            border-radius: 8px;
+            display: inline-block;
+            text-shadow: 0 0 5px #6aff6a;
+        }
+
+        /* Tabuleiro */
+        .board-container {
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #00d0ff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 20px #00d0ff, inset 0 0 15px rgba(0, 208, 255, 0.3);
+            position: relative;
+        }
+
+        .board-container::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #00d0ff;
+            border-radius: 16px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .board {
+            width: 560px;
+            height: 560px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px;
+            margin: 0 auto;
+            background: #1a1a2e;
+            border: 4px solid #ff6b6b;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .cell {
+            background: #2d2d4e;
+            border: 2px solid #44446a;
+            position: relative;
+            transition: all 0.3s ease;
+            image-rendering: pixelated;
+        }
+
+        .cell:nth-child(odd) {
+            background: #252545;
+        }
+
+        .cell:hover {
+            background: #3a3a6a;
+            transform: scale(1.05);
+            z-index: 2;
+        }
+
+        .cell.active {
+            background: #6aff6a;
+            border-color: #4cd14c;
+        }
+
+        /* Peões/Avatares */
+        .pawn {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid white;
+            border-radius: 8px;
+            image-rendering: pixelated;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .pawn:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            z-index: 3;
+        }
+
+        .pawn.player1 { border-color: #ff6b6b; }
+        .pawn.player2 { border-color: #6aff6a; }
+        .pawn.player3 { border-color: #00d0ff; }
+        .pawn.player4 { border-color: #ffd700; }
+
+        .player-name {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        /* Área de Cartas */
+        .card-area {
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #ff6b6b;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 15px #ff6b6b, inset 0 0 10px rgba(255, 107, 107, 0.3);
+            position: relative;
+        }
+
+        .card-area::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #ff6b6b;
+            border-radius: 16px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .card-title {
+            color: #ff6b6b;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 5px #ff6b6b;
+        }
+
+        .card-display {
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid #00d0ff;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 120px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* Botões */
+        .btn-pixel {
+            width: 100%;
+            padding: 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #6aff6a;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 2px 2px 0 #000;
+            margin-bottom: 10px;
+        }
+
+        .btn-pixel::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #6aff6a;
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .btn-pixel:hover {
+            background: rgba(106, 255, 106, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-pixel:active {
+            transform: translateY(-1px);
+        }
+
+        /* Elementos decorativos pixelados */
+        .pixel-corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            image-rendering: pixelated;
+        }
+
+        .board-container .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #00d0ff;
+        }
+
+        .board-container .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #00d0ff;
+        }
+
+        .board-container .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #00d0ff;
+        }
+
+        .board-container .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #00d0ff;
+        }
+
+        .card-area .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+
+        .card-area .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+
+        .card-area .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+
+        .card-area .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+
+        /* Info dos Jogadores */
+        .players-info {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #6aff6a;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+        }
+
+        .player-avatar {
+            width: 30px;
+            height: 30px;
+            border: 2px solid;
+            border-radius: 6px;
+            margin-right: 10px;
+            image-rendering: pixelated;
+        }
+
+        .player-details {
+            font-size: 10px;
+        }
+
+        .player-name {
+            color: #00d0ff;
+            margin-bottom: 2px;
+        }
+
+        .player-position {
+            color: #6aff6a;
+            font-size: 8px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 1024px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .board {
+                width: 400px;
+                height: 400px;
+            }
+            
+            .pawn {
+                width: 35px;
+                height: 35px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .board {
+                width: 320px;
+                height: 320px;
+            }
+            
+            .pawn {
+                width: 25px;
+                height: 25px;
+            }
+            
+            .game-title {
+                font-size: 20px;
+            }
+            
+            .turn-info {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .board {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .pawn {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .btn-pixel {
+                font-size: 10px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">🎮 TABULEIRO DO JOGO</h1>
+            <div class="turn-info" id="turnInfo">Carregando partida...</div>
+        </div>
+
+        <div class="board-container">
+            <div class="pixel-corner corner-tl"></div>
+            <div class="pixel-corner corner-tr"></div>
+            <div class="pixel-corner corner-bl"></div>
+            <div class="pixel-corner corner-br"></div>
+            
+            <div class="board" id="board"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="card-area">
+                <div class="pixel-corner corner-tl"></div>
+                <div class="pixel-corner corner-tr"></div>
+                <div class="pixel-corner corner-bl"></div>
+                <div class="pixel-corner corner-br"></div>
+                
+                <h2 class="card-title">🃏 CARTA ATUAL</h2>
+                <div class="card-display" id="cardText">
+                    Nenhuma carta puxada ainda...
+                </div>
+                
+                <button class="btn-pixel" id="drawCardBtn">
+                    🎴 PUXAR CARTA
+                </button>
+            </div>
+
+            <div class="players-info">
+                <h3 class="card-title">👥 JOGADORES</h3>
+                <div id="playersList">
+                    <!-- Lista de jogadores será preenchida via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+import { 
+    getQueryParam, 
+    goTo 
+} from "{{ url_for('static', filename='js/api/index.js') }}";
+
+import { 
+    initSocket, 
+    onGameUpdate, 
+    onSocketError 
+} from "{{ url_for('static', filename='js/api/socket.js') }}";
+
+// ======================================================
+// DADOS DO JOGADOR E DA PARTIDA
+// ======================================================
+const game_code = getQueryParam("game_code");
+const username   = getQueryParam("username") || localStorage.getItem("username");
+const avatar_id  = parseInt(getQueryParam("avatar_id") || localStorage.getItem("selectedAvatar") || 1);
+
+if (!game_code || !username) {
+    goTo("/home");
+}
+
+// ======================================================
+// ELEMENTOS
+// ======================================================
+const board        = document.getElementById("board");
+const cardText     = document.getElementById("cardText");
+const turnInfo     = document.getElementById("turnInfo");
+const playersList  = document.getElementById("playersList");
+const drawCardBtn  = document.getElementById("drawCardBtn");
+
+const playerColors = ["player1", "player2", "player3", "player4"];
+
+// ======================================================
+// CRIA TABULEIRO (8×8)
+// ======================================================
+function createBoard() {
+    board.innerHTML = "";
+    for (let i = 0; i < 64; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.pos = i;
+
+        const row = Math.floor(i / 8);
+        const col = i % 8;
+
+        if (row === 0) {
+            const c = document.createElement("div");
+            c.style = `position:absolute;top:2px;left:2px;font-size:8px;color:#6aff6a`;
+            c.textContent = String.fromCharCode(65 + col);
+            cell.appendChild(c);
+        }
+
+        if (col === 0) {
+            const r = document.createElement("div");
+            r.style = `position:absolute;top:2px;right:2px;font-size:8px;color:#6aff6a`;
+            r.textContent = 8 - row;
+            cell.appendChild(r);
+        }
+
+        board.appendChild(cell);
+    }
+}
+
+createBoard();
+
+// ======================================================
+// CONECTA SOCKET
+// ======================================================
+import { onWaitingRoomUpdate, onStartGame } from "{{ url_for('static', filename='js/api/socket.js') }}";
+
+const socket = initSocket(game_code, username, avatar_id);
+
+// Estado inicial: partida não começou
+let partidaIniciada = false;
+disableBoard(true);
+
+// Atualiza mensagem de erros
+onSocketError((msg) => {
+    turnInfo.innerHTML = `❌ ${msg}`;
+});
+
+// Atualização da sala de espera
+onWaitingRoomUpdate((players) => {
+    updatePlayersList(players);
+    turnInfo.innerHTML = partidaIniciada 
+        ? turnInfo.innerHTML 
+        : `Sala de espera: ${players.length} jogador(es) conectado(s)`;
+});
+
+// Início da partida
+onStartGame((state) => {
+    partidaIniciada = true;
+    turnInfo.innerHTML = `Partida iniciada! Vez de: ${state.turno_atual}`;
+    createBoard();
+    renderBoard(state);
+    disableBoard(false);
+});
+
+// ======================================================
+// Função para habilitar/desabilitar tabuleiro e botões
+// ======================================================
+function disableBoard(disable = true) {
+    drawCardBtn.disabled = disable;
+    if (disable) {
+        drawCardBtn.style.opacity = 0.5;
+        board.style.pointerEvents = "none";
+    } else {
+        drawCardBtn.style.opacity = 1;
+        board.style.pointerEvents = "auto";
+    }
+}
+
+// ======================================================
+// Listener: atualização de estado da partida
+// ======================================================
+onGameUpdate((state) => {
+    if (!partidaIniciada) return; // ignora enquanto não iniciou
+    renderBoard(state);
+    updatePlayersList(state.players);
+    if (state.carta_atual) renderCard(state.carta_atual);
+});
+
+
+// ======================================================
+// RENDERIZA CARD
+// ======================================================
+function renderCard(text) {
+    cardText.innerHTML = `🎴 <strong>${text}</strong>`;
+    cardText.style.animation = "none";
+    setTimeout(() => cardText.style.animation = "pulse 0.6s", 30);
+}
+
+// ======================================================
+// RENDERIZA TABULEIRO
+// ======================================================
+function renderBoard(state) {
+    turnInfo.innerHTML = `Vez de: ${state.turno_atual}`;
+
+    // Remove peões antigos
+    document.querySelectorAll(".pawn").forEach(e => e.remove());
+
+    state.players.forEach((p, i) => {
+        const pos = p.posicao;
+        const cell = document.querySelector(`[data-pos="${pos}"]`);
+        if (!cell) return;
+
+        const pawn = document.createElement("div");
+        pawn.classList.add("pawn", playerColors[i]);
+
+        pawn.style.background = `url('/static/img/avatars/avatar_${p.avatar_id}.png') center/cover`;
+
+        const name = document.createElement("div");
+        name.classList.add("player-name");
+        name.textContent = p.nome;
+
+        pawn.appendChild(name);
+        cell.appendChild(pawn);
+    });
+}
+
+// ======================================================
+// LISTA DE JOGADORES
+// ======================================================
+function updatePlayersList(players) {
+    playersList.innerHTML = "";
+
+    players.forEach((p, i) => {
+        const item = document.createElement("div");
+        item.classList.add("player-item");
+
+        item.innerHTML = `
+            <div class="player-avatar"
+                 style="border-color:${getColor(i)};
+                        background:url('/static/img/avatars/avatar_${p.avatar_id}.png') center/cover">
+            </div>
+            <div class="player-details">
+                <div class="player-name">${p.nome}</div>
+                <div class="player-position">Posição: ${p.posicao + 1}</div>
+            </div>
+        `;
+
+        playersList.appendChild(item);
+    });
+}
+
+function getColor(i) {
+    const colors = ["#ff6b6b", "#6aff6a", "#00d0ff", "#ffd700"];
+    return colors[i] || "#fff";
+}
+
+// ======================================================
+// BOTÃO PUXAR CARTA
+// ======================================================
+drawCardBtn.addEventListener("click", () => {
+    socket.emit("puxar_carta", {
+        game_code,
+        nome: username
+    });
+});
+</script>
+
+</body>
+</html>

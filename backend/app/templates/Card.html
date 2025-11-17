@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Carta de Pergunta - Pixel Game</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('https://art.pixilart.com/sr5z97b2266c6daws3.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        /* Título */
+        .title {
+            color: #ff6b6b;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b;
+            letter-spacing: 1px;
+            animation: title-glow 2s infinite alternate;
+        }
+        
+        @keyframes title-glow {
+            0% { text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b; }
+            100% { text-shadow: 3px 3px 0 #000, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; }
+        }
+        
+        /* Caixa da carta */
+        .card-box {
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #00d0ff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 20px #00d0ff, inset 0 0 15px rgba(0, 208, 255, 0.3);
+            position: relative;
+            animation: card-glow 3s infinite;
+        }
+        
+        @keyframes card-glow {
+            0% { box-shadow: 0 0 20px #00d0ff, inset 0 0 15px rgba(0, 208, 255, 0.3); }
+            50% { box-shadow: 0 0 30px #00d0ff, 0 0 40px #00d0ff, inset 0 0 15px rgba(0, 208, 255, 0.5); }
+            100% { box-shadow: 0 0 20px #00d0ff, inset 0 0 15px rgba(0, 208, 255, 0.3); }
+        }
+        
+        .card-box::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #00d0ff;
+            border-radius: 16px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        /* Informação do turno */
+        .turn {
+            color: #6aff6a;
+            font-size: 14px;
+            margin-bottom: 25px;
+            padding: 12px;
+            background: rgba(106, 255, 106, 0.1);
+            border: 2px solid #6aff6a;
+            border-radius: 8px;
+            text-shadow: 0 0 5px #6aff6a;
+        }
+        
+        /* Pergunta */
+        .question {
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid #ff6b6b;
+            border-radius: 8px;
+            text-shadow: 1px 1px 0 #000;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Container de opções */
+        .options-box {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        /* Opções individuais */
+        .option {
+            padding: 18px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #ffd700;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 1px 1px 0 #000;
+        }
+        
+        .option::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .option:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .option:active {
+            transform: translateY(-1px);
+        }
+        
+        .option.correct {
+            border-color: #6aff6a;
+            background: rgba(106, 255, 106, 0.2);
+        }
+        
+        .option.incorrect {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
+        }
+        
+        .option.selected {
+            border-color: #00d0ff;
+            background: rgba(0, 208, 255, 0.2);
+        }
+        
+        .option.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .option.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Timer */
+        .timer {
+            color: #ff6b6b;
+            font-size: 16px;
+            padding: 12px;
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            text-shadow: 0 0 5px #ff6b6b;
+            animation: pulse 1s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        
+        .timer.warning {
+            animation: warning-pulse 0.5s infinite alternate;
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+        
+        @keyframes warning-pulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 0 10px #ff0000;
+            }
+            100% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 20px #ff0000;
+            }
+        }
+        
+        /* Feedback */
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            text-shadow: 1px 1px 0 #000;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .feedback.correct {
+            background: rgba(106, 255, 106, 0.2);
+            border: 2px solid #6aff6a;
+            color: #6aff6a;
+        }
+        
+        .feedback.incorrect {
+            background: rgba(255, 107, 107, 0.2);
+            border: 2px solid #ff6b6b;
+            color: #ff6b6b;
+        }
+        
+        /* Elementos decorativos pixelados */
+        .pixel-corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            image-rendering: pixelated;
+        }
+        
+        .card-box .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #00d0ff;
+        }
+        
+        .card-box .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #00d0ff;
+        }
+        
+        .card-box .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #00d0ff;
+        }
+        
+        .card-box .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #00d0ff;
+        }
+        
+        /* Ícones das opções */
+        .option::after {
+            content: '🔘';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+        
+        .option.selected::after {
+            content: '✅';
+        }
+        
+        .option.correct::after {
+            content: '🎯';
+        }
+        
+        .option.incorrect::after {
+            content: '❌';
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 18px;
+            }
+            
+            .card-box {
+                padding: 20px;
+            }
+            
+            .question {
+                font-size: 12px;
+                padding: 15px;
+            }
+            
+            .option {
+                font-size: 10px;
+                padding: 15px;
+            }
+            
+            .timer {
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .title {
+                font-size: 16px;
+            }
+            
+            .card-box {
+                padding: 15px;
+            }
+            
+            .question {
+                font-size: 10px;
+                padding: 12px;
+            }
+            
+            .option {
+                font-size: 9px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2 class="title">🃏 Carta de Pergunta</h2>
+
+        <div class="card-box">
+            <div class="pixel-corner corner-tl"></div>
+            <div class="pixel-corner corner-tr"></div>
+            <div class="pixel-corner corner-bl"></div>
+            <div class="pixel-corner corner-br"></div>
+
+            <p id="playerTurn" class="turn">Vez de: Carregando...</p>
+
+            <p id="question" class="question">Carregando pergunta...</p>
+
+            <div id="optionsContainer" class="options-box">
+                <!-- Opções serão inseridas via JavaScript -->
+            </div>
+
+            <p id="timer" class="timer">⏳ 60s</p>
+
+            <div id="feedback" class="feedback"></div>
+        </div>
+    </div>
+
+    <script type="module">
+    import {
+        initSocket,
+        sendAnswer,
+        onGameUpdate
+    } from "{{ url_for('static', filename='js/api/index.js') }}";
+
+    import {
+        getQueryParam
+    } from "{{ url_for('static', filename='js/api/index.js') }}";
+
+    // ============================
+    // USER E DADOS DA PARTIDA
+    // ============================
+    const username = localStorage.getItem("username") || getQueryParam("username");
+    const avatar_id = parseInt(localStorage.getItem("selectedAvatar")) || 1;
+    const game_code = getQueryParam("game_code");
+
+    // ============================
+    // ELEMENTOS DOM
+    // ============================
+    const playerTurnElement = document.getElementById('playerTurn');
+    const questionElement = document.getElementById('question');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const timerElement = document.getElementById('timer');
+    const feedbackElement = document.getElementById('feedback');
+
+    // ============================
+    // ESTADO DO JOGO
+    // ============================
+    let socket = null;
+    let currentQuestion = null;
+    let selectedOption = null;
+    let timeLeft = 60;
+    let timerInterval = null;
+    let answered = false;
+
+    // ============================
+    // INICIALIZA SOCKET
+    // ============================
+    socket = initSocket({ username, avatar_id, game_code });
+
+    // Recebe atualizações do jogo
+    onGameUpdate((data) => {
+        if (data.type === "NEW_QUESTION") handleNewQuestion(data.payload);
+        if (data.type === "ANSWER_RESULT") handleAnswerResult(data.payload);
+        if (data.type === "TIMER") updateTimerFromServer(data.payload);
+    });
+
+    // Pede a primeira pergunta ao servidor
+    socket.emit("request_question", { game_code });
+
+    // ============================
+    // TRATA NOVA PERGUNTA
+    // ============================
+    function handleNewQuestion(data) {
+        currentQuestion = data;
+
+        selectedOption = null;
+        answered = false;
+
+        timeLeft = data.timeLimit || 60;
+
+        playerTurnElement.textContent = `Vez de: ${data.currentPlayer}`;
+        questionElement.textContent = data.question;
+
+        renderOptions();
+        clearFeedback();
+        startTimer();
+    }
+
+    // ============================
+    // RENDERIZA OPÇÕES A/B/C/D
+    // ============================
+    function renderOptions() {
+        optionsContainer.innerHTML = "";
+
+        const letters = ["A", "B", "C", "D"];
+
+        currentQuestion.options.forEach((option, index) => {
+            const btn = document.createElement("button");
+            btn.className = "option";
+            btn.dataset.id = option.id;
+
+            btn.innerHTML = `<strong>${letters[index]})</strong> ${option.text}`;
+
+            // animação ao aparecer
+            btn.style.animation = "slideIn 0.3s ease-out";
+
+            btn.addEventListener("click", () => selectOption(option.id));
+
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    // ============================
+    // ESCOLHER UMA OPÇÃO
+    // ============================
+    function selectOption(optionId) {
+        if (answered) return;
+
+        selectedOption = optionId;
+        answered = true;
+
+        // Visual
+        document.querySelectorAll(".option").forEach(opt => {
+            opt.classList.remove("selected");
+            if (opt.dataset.id == optionId) opt.classList.add("selected");
+        });
+
+        stopTimer();
+
+        // Envia para o backend
+        sendAnswer({
+            game_code,
+            question_id: currentQuestion.id,
+            answer: optionId,
+            player: username
+        });
+    }
+
+    // ============================
+    // RESULTADO DA RESPOSTA
+    // ============================
+    function handleAnswerResult(data) {
+        answered = true;
+        stopTimer();
+
+        const correct = data.correct_answer;
+
+        document.querySelectorAll(".option").forEach(opt => {
+            const id = parseInt(opt.dataset.id);
+
+            if (id === correct) opt.classList.add("correct");
+            else if (id === selectedOption) opt.classList.add("incorrect");
+
+            opt.classList.add("disabled");
+        });
+
+        if (selectedOption === correct) {
+            showFeedback("🎉 Resposta Correta! +10 pontos", "correct");
+        } else {
+            const correctText =
+                currentQuestion.options.find(o => o.id === correct)?.text;
+
+            showFeedback(`❌ Errado! Resposta certa: ${correctText}`, "incorrect");
+        }
+
+        setTimeout(() => {
+            socket.emit("request_question", { game_code });
+        }, 3000);
+    }
+
+    // ============================
+    // TIMER
+    // ============================
+    function startTimer() {
+        stopTimer();
+        updateTimerDisplay();
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+
+            if (timeLeft <= 10) timerElement.classList.add("warning");
+
+            if (timeLeft <= 0) {
+                stopTimer();
+                timeIsUp();
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerElement.classList.remove("warning");
+    }
+
+    function updateTimerDisplay() {
+        timerElement.textContent = `⏳ ${timeLeft}s`;
+    }
+
+    function updateTimerFromServer(data) {
+        timeLeft = data.time_left;
+        updateTimerDisplay();
+    }
+
+    // Quando tempo acaba
+    function timeIsUp() {
+        answered = true;
+        showFeedback("⏰ Tempo Esgotado!", "incorrect");
+
+        document.querySelectorAll(".option").forEach(opt => {
+            opt.classList.add("disabled");
+            if (opt.dataset.id == currentQuestion.correctAnswer)
+                opt.classList.add("correct");
+        });
+
+        setTimeout(() => {
+            socket.emit("request_question", { game_code });
+        }, 3000);
+    }
+
+    // ============================
+    // FEEDBACK
+    // ============================
+    function showFeedback(text, type) {
+        feedbackElement.textContent = text;
+        feedbackElement.className = `feedback ${type}`;
+    }
+
+    function clearFeedback() {
+        feedbackElement.textContent = "";
+        feedbackElement.className = "feedback";
+    }
+</script>
+
+</body>
+</html>
