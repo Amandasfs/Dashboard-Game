@@ -112,36 +112,121 @@ const countdownNumber = document.getElementById('countdownNumber');
 
 let isReady = false;
 let countdownInterval = null;
+let redirectTimeout = null;
 
 // =================== SOCKET.IO ===================
 const socket = initSocket(token, username, avatar_id);
+
+// Debug: verifica conexão do socket
+socket.on("connect", () => {
+    console.log("✅ [FRONTEND] Socket conectado!");
+});
+
+socket.on("disconnect", () => {
+    console.log("❌ [FRONTEND] Socket desconectado!");
+});
+
+// Debug: escuta todos os eventos para ver o que está chegando
+socket.onAny((eventName, ...args) => {
+    console.log(`📡 [FRONTEND] Evento recebido: ${eventName}`, args);
+});
 
 // =================== EVENTOS SOCKET.IO ===================
 
 // Atualização da sala
 socket.on("atualizacao_sala", (data) => {
     const players = data.players || [];
+    const settings = data.settings || {};
+    
+    // Atualiza informações da partida
+    document.getElementById("matchToken").textContent = `Token: ${token}`;
+    document.getElementById("maxPlayers").textContent = settings.max_jogadores || 4;
+    document.getElementById("gameDuration").textContent = settings.duracao || 15;
+    
+    // Atualiza modo
+    const modo = settings.modo || "multi";
+    const modoText = modo === "bot" ? "🤖 Contra Bots" : "🎮 Competitivo";
+    document.getElementById("gameMode").textContent = modoText;
+    
+    // Atualiza lista de jogadores
     playersList.innerHTML = "";
     players.forEach(p => {
         const card = document.createElement("div");
         card.className = `player-card ${p.isReady ? 'ready' : ''} ${p.isHost ? 'host' : ''}`;
+        
+        // Evita múltiplos GETs na imagem - usa placeholder se não tiver avatar_url
+        const avatarUrl = p.avatar_url;
+        const playerName = p.username || p.name || 'Jogador';
+        
         card.innerHTML = `
-            <div class="player-avatar"><img src="${p.avatar_url || '/static/img/default-avatar.png'}" width="60" height="60"/></div>
-            <div class="player-name">${p.username || p.name}</div>
+            <div class="player-avatar"><img src="${avatarUrl}" width="60" height="60" onerror="this.onerror=null; this.src='/static/img/default-avatar.png';"/></div>
+            <div class="player-name">${playerName}</div>
             <div class="player-status ${p.isReady ? '' : 'waiting'}">
                 ${p.isReady ? '✅ PRONTO' : '⏳ AGUARDANDO'}
             </div>
         `;
         playersList.appendChild(card);
     });
+    
+    // Atualiza contador de jogadores
     const readyCount = players.filter(p => p.isReady).length;
-    playersCount.textContent = `${players.length}/${data.settings?.max_jogadores || 4} jogadores (${readyCount} prontos)`;
+    const maxPlayers = settings.max_jogadores || 4;
+    
+    // Se for modo bot, não mostra "aguardando jogadores"
+    if (modo === "bot") {
+        playersCount.textContent = `${players.length}/${maxPlayers} jogadores (${readyCount} prontos)`;
+    } else {
+        playersCount.textContent = `${players.length}/${maxPlayers} jogadores (${readyCount} prontos)`;
+    }
+});
+
+// Contagem regressiva antes de iniciar
+socket.on("game_starting", (data) => {
+    console.log("🎮 [FRONTEND] Evento game_starting recebido:", data);
+    const seconds = data.countdown || 3;
+    countdown.style.display = "block";
+    countdownNumber.textContent = seconds;
+    
+    let current = seconds;
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+        current--;
+        if (current > 0) {
+            countdownNumber.textContent = current;
+        } else {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            countdown.style.display = "none";
+            // Fallback: se não receber iniciar_partida em 1 segundo, redireciona
+            console.log("⏰ [FRONTEND] Countdown terminou, aguardando iniciar_partida...");
+            if (redirectTimeout) clearTimeout(redirectTimeout);
+            redirectTimeout = setTimeout(() => {
+                console.log("⏰ [FRONTEND] Timeout - redirecionando automaticamente...");
+                window.location.href = `/tabuleiro?token=${token}`;
+            }, 1000);
+        }
+    }, 1000);
 });
 
 // Partida iniciada → vai pro tabuleiro
 socket.on("iniciar_partida", (data) => {
-    console.log("Partida iniciada:", data);
-    window.location.href = `/tabuleiro?token=${game_code}`;
+    console.log("🎮 [FRONTEND] Evento iniciar_partida recebido:", data);
+    
+    // Limpa countdown e timeout se ainda estiverem rodando
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+        redirectTimeout = null;
+    }
+    
+    const gameCode = data.game_code || data.gameCode || token;
+    console.log("🎮 [FRONTEND] Redirecionando para tabuleiro com token:", gameCode);
+    
+    // Força redirecionamento imediatamente
+    window.location.href = `/tabuleiro?token=${gameCode}`;
 });
 
 // Erros do socket

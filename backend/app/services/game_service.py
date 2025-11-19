@@ -13,7 +13,7 @@ class GameService:
     # Criação e entrada na partida
     # -----------------------------------------
 
-    def criar_partida(self, host_user, max_jogadores=4, duracao=15):
+    def criar_partida(self, host_user, max_jogadores=4, duracao=15, modo="multi"):
         """
         Cria uma partida nova e retorna o código.
         """
@@ -24,6 +24,7 @@ class GameService:
             "players": [],
             "max_jogadores": max_jogadores,
             "duracao": duracao,
+            "modo": modo,  # "multi" ou "bot"
             "start_time": None,
             "turno": 0,
             "finished": False,
@@ -48,9 +49,11 @@ class GameService:
         partida["players"].append({
             "name": jogador,
             "avatar": avatar,
+            "avatar_url": f"/static/img/avatar-{avatar}.png",  # URL do avatar
             "posicao": 0,
             "pontos": 0,
-            "vida_extra": 0
+            "vida_extra": 0,
+            "isReady": False  # Inicializa como não pronto
         })
 
         return True, partida
@@ -165,6 +168,45 @@ class GameService:
 
         partida["turno"] = (partida["turno"] + 1) % len(partida["players"])
         return partida["players"][partida["turno"]]
+
+    def todos_prontos(self, game_code):
+        """
+        Verifica se todos os jogadores humanos estão prontos.
+        """
+        partida = self.games.get(game_code)
+        if not partida:
+            return False
+
+        humanos = [p for p in partida["players"] if not p["name"].startswith("BOT_")]
+        if len(humanos) == 0:
+            return False
+
+        return all(p.get("isReady", False) for p in humanos)
+
+    def iniciar_partida(self, game_code):
+        """
+        Inicializa o estado da partida.
+        """
+        partida = self.games.get(game_code)
+        if not partida:
+            return None
+
+        partida["start_time"] = datetime.now()
+        partida["turno"] = 0
+
+        # Inicializa posições dos jogadores
+        for jogador in partida["players"]:
+            jogador["posicao"] = 0
+            jogador["pontos"] = 0
+            jogador["vida_extra"] = 0
+
+        # Retorna estado inicial do jogo
+        return {
+            "game_code": game_code,
+            "players": partida["players"],
+            "tabuleiro": partida["tabuleiro"],
+            "turno_atual": partida["players"][0]["name"] if partida["players"] else None
+        }
 
     # -----------------------------------------
     # SocketIO

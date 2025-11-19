@@ -1,5 +1,5 @@
 # backend/app/routes/game_routes.py
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app.extensions import socketio, game_service  # usa a instância global
 from flask_socketio import join_room
 
@@ -8,6 +8,15 @@ game_bp = Blueprint("game", __name__)
 # -------------------- Criar Partida --------------------
 @game_bp.route("/api/game/create", methods=["POST"])
 def criar_partida():
+    # Importa game_service em tempo de execução para garantir que está inicializado
+    import app.extensions
+    gs = app.extensions.game_service
+    
+    if gs is None:
+        from app.services.game_service import GameService
+        gs = GameService(current_app.db, socketio)
+        app.extensions.game_service = gs
+    
     data = request.json
     if not data or "host" not in data:
         return jsonify({"error": "Host inválido"}), 400
@@ -15,8 +24,17 @@ def criar_partida():
     host_user = data["host"]
     max_jogadores = int(data.get("max_jogadores", 4))
     max_jogadores = min(max_jogadores, 8)
+    modo = data.get("modo", "multi")  # "multi" ou "bot"
+    duracao = int(data.get("duracao", 15))
+    
+    print(f"🎮 [CREATE GAME] Modo recebido: {modo}, Host: {host_user}, Max: {max_jogadores}")
 
-    game_code = game_service.criar_partida(host_user, max_jogadores)
+    game_code = gs.criar_partida(host_user, max_jogadores, duracao, modo)
+    
+    # Verifica se o modo foi salvo corretamente
+    partida_criada = gs.games.get(game_code)
+    if partida_criada:
+        print(f"✅ [CREATE GAME] Partida criada com modo: {partida_criada.get('modo')}")
 
     return jsonify({"codigo": game_code, "msg": "Partida criada com sucesso"}), 201
 
@@ -54,11 +72,13 @@ def entrar_sala(data):
     join_room(game_code)
     print(f"[SOCKET] {player} entrou na sala {game_code}")
 
-    socketio.emit("atualizacao_sala", {"players": partida["players"]}, room=game_code)
+    socketio.emit("atualizacao_sala", {"players": partida["players"], "settings": partida}, room=game_code)
 
     if game_service.todos_prontos(game_code):
-        socketio.emit("iniciar_partida", {"msg": "Partida iniciada!"}, room=game_code)
-        game_service.iniciar_partida(game_code)
+        game_state = game_service.iniciar_partida(game_code)
+        if game_state:
+            game_state["game_code"] = game_code
+        socketio.emit("iniciar_partida", game_state or {"game_code": game_code}, room=game_code)
 
 
 @socketio.on("responder_pergunta")

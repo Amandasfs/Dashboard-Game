@@ -5,15 +5,12 @@ import { API } from "./config.js";
 // GAME API (COMPATÍVEL COM AVATARES)
 // ======================================
 
-export async function createGame(host, maxPlayers = 4) {
+export async function createGame(host, maxPlayers = 4, duracao = 15, modo = "multi") {
     const payload = {
-        host: {
-            id: host.id,
-            nome: host.username,
-            avatar_id: host.avatar_id,
-            avatar_url: host.avatar_url
-        },
-        max_jogadores: maxPlayers
+        host: host.username || host.nome || host,
+        max_jogadores: maxPlayers,
+        duracao: duracao,
+        modo: modo
     };
 
     const response = await fetch(API.CREATE_GAME, {

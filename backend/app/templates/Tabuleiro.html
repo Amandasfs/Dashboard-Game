@@ -454,16 +454,17 @@ import {
     initSocket, 
     onGameUpdate, 
     onSocketError 
-} from "{{ url_for('static', filename='js/api/socket.js') }}";
+} from "{{ url_for('static', filename='js/socket.js') }}";
 
 // ======================================================
 // DADOS DO JOGADOR E DA PARTIDA
 // ======================================================
-const game_code = getQueryParam("game_code");
+const game_code = getQueryParam("token") || getQueryParam("game_code");
 const username   = getQueryParam("username") || localStorage.getItem("username");
 const avatar_id  = parseInt(getQueryParam("avatar_id") || localStorage.getItem("selectedAvatar") || 1);
 
 if (!game_code || !username) {
+    console.error("❌ [TABULEIRO] Token ou username não encontrado. Token:", game_code, "Username:", username);
     goTo("/home");
 }
 
@@ -514,7 +515,7 @@ createBoard();
 // ======================================================
 // CONECTA SOCKET
 // ======================================================
-import { onWaitingRoomUpdate, onStartGame } from "{{ url_for('static', filename='js/api/socket.js') }}";
+import { onWaitingRoomUpdate, onStartGame } from "{{ url_for('static', filename='js/socket.js') }}";
 
 const socket = initSocket(game_code, username, avatar_id);
 
@@ -537,8 +538,15 @@ onWaitingRoomUpdate((players) => {
 
 // Início da partida
 onStartGame((state) => {
+    console.log("🎮 [TABULEIRO] Partida iniciada, estado recebido:", state);
     partidaIniciada = true;
-    turnInfo.innerHTML = `Partida iniciada! Vez de: ${state.turno_atual}`;
+    
+    // Garante que turno_atual é string
+    const turnoAtual = typeof state.turno_atual === 'string' 
+        ? state.turno_atual 
+        : (state.turno_atual?.name || state.turno_atual || 'Aguardando...');
+    
+    turnInfo.innerHTML = `Partida iniciada! Vez de: ${turnoAtual}`;
     createBoard();
     renderBoard(state);
     disableBoard(false);
@@ -565,8 +573,64 @@ onGameUpdate((state) => {
     if (!partidaIniciada) return; // ignora enquanto não iniciou
     renderBoard(state);
     updatePlayersList(state.players);
-    if (state.carta_atual) renderCard(state.carta_atual);
+    
+    // Atualiza turno
+    const turnoAtual = typeof state.turno_atual === 'string' 
+        ? state.turno_atual 
+        : (state.turno_atual?.name || state.turno_atual || 'Aguardando...');
+    turnInfo.innerHTML = `Vez de: ${turnoAtual}`;
 });
+
+// ======================================================
+// Listener: Nova carta recebida
+// ======================================================
+socket.on("nova_carta", (data) => {
+    console.log("🎴 [TABULEIRO] Nova carta recebida:", data);
+    
+    // Exibe a carta
+    const cardHtml = `
+        <div style="background: rgba(0,0,0,0.8); padding: 15px; border: 3px solid #00d0ff; border-radius: 8px;">
+            <div style="color: #00d0ff; font-size: 12px; margin-bottom: 10px;">
+                Dificuldade: ${data.difficulty || 'easy'}
+            </div>
+            <div style="color: #fff; font-size: 11px; margin-bottom: 15px; line-height: 1.6;">
+                ${data.question || 'Pergunta não disponível'}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${(data.options || []).map((opt, idx) => `
+                    <button class="btn-pixel" style="font-size: 10px; padding: 10px;" onclick="responderCarta(${idx})">
+                        ${opt}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    cardText.innerHTML = cardHtml;
+    
+    // Salva a carta atual para resposta
+    window.cartaAtual = data;
+});
+
+// Função para responder a carta
+window.responderCarta = function(respostaIdx) {
+    if (!window.cartaAtual) return;
+    
+    const respostaCorreta = window.cartaAtual.answer === respostaIdx;
+    console.log("✅ [TABULEIRO] Resposta:", respostaCorreta ? "Correta" : "Errada");
+    
+    // Envia resposta para o backend
+    socket.emit("responder_pergunta", {
+        game_code: game_code,
+        player: username,
+        resposta: respostaIdx,
+        carta: window.cartaAtual
+    });
+    
+    // Limpa a carta
+    cardText.innerHTML = "Processando resposta...";
+    window.cartaAtual = null;
+};
 
 
 // ======================================================
