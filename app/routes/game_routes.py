@@ -1,6 +1,6 @@
 # backend/app/routes/game_routes.py
 from flask import Blueprint, request, jsonify, current_app
-from app.extensions import socketio, game_service  # usa a instância global
+from app.extensions import socketio, game_service
 from flask_socketio import join_room
 
 game_bp = Blueprint("game", __name__)
@@ -8,30 +8,27 @@ game_bp = Blueprint("game", __name__)
 # -------------------- Criar Partida --------------------
 @game_bp.route("/api/game/create", methods=["POST"])
 def criar_partida():
-    # Importa game_service em tempo de execução para garantir que está inicializado
     import app.extensions
     gs = app.extensions.game_service
-    
+
     if gs is None:
         from app.services.game_service import GameService
         gs = GameService(current_app.db, socketio)
         app.extensions.game_service = gs
-    
+
     data = request.json
     if not data or "host" not in data:
         return jsonify({"error": "Host inválido"}), 400
 
     host_user = data["host"]
-    max_jogadores = int(data.get("max_jogadores", 4))
-    max_jogadores = min(max_jogadores, 8)
+    max_jogadores = min(int(data.get("max_jogadores", 4)), 8)
     modo = data.get("modo", "multi")  # "multi" ou "bot"
     duracao = int(data.get("duracao", 15))
-    
-    print(f"🎮 [CREATE GAME] Modo recebido: {modo}, Host: {host_user}, Max: {max_jogadores}")
+
+    print(f"🎮 [CREATE GAME] Modo: {modo}, Host: {host_user}, Max: {max_jogadores}")
 
     game_code = gs.criar_partida(host_user, max_jogadores, duracao, modo)
-    
-    # Verifica se o modo foi salvo corretamente
+
     partida_criada = gs.games.get(game_code)
     if partida_criada:
         print(f"✅ [CREATE GAME] Partida criada com modo: {partida_criada.get('modo')}")
@@ -54,14 +51,12 @@ def entrar_partida_route():
     return jsonify({"msg": f"{jogador} entrou na partida", "partida": partida}), 200
 
 
-# ==========================================================
-# EVENTOS SOCKET.IO
-# ==========================================================
+# ==================== SOCKET.IO ====================
 
-@socketio.on("entrar_sala")
+@socketio.on("join_room")
 def entrar_sala(data):
-    game_code = data.get("game_code")
-    player = data.get("player")
+    game_code = data.get("token")
+    player = data.get("username")
     avatar = data.get("avatar")
 
     sucesso, partida = game_service.entrar_partida(game_code, player, avatar)
@@ -81,10 +76,22 @@ def entrar_sala(data):
         socketio.emit("iniciar_partida", game_state or {"game_code": game_code}, room=game_code)
 
 
+@socketio.on("puxar_carta")
+def puxar_carta(data):
+    game_code = data.get("token")
+    player_name = data.get("nome")
+
+    carta = game_service.puxar_carta(game_code, player_name)
+    if carta:
+        socketio.emit("carta_enviada", carta, room=game_code)
+    else:
+        socketio.emit("error", {"msg": "Não foi possível puxar a carta"}, room=game_code)
+
+
 @socketio.on("responder_pergunta")
 def responder_pergunta(data):
     game_code = data.get("game_code")
-    player_name = data.get("player")
+    player_data = data.get("player")  # pode ser dict com nome/avatar
     resposta_idx = data.get("resposta")
     carta = data.get("carta")
 
@@ -93,23 +100,18 @@ def responder_pergunta(data):
         socketio.emit("error", {"msg": "Partida não encontrada"}, room=game_code)
         return
 
-    # Encontra jogador
-    jogador = next((p for p in partida["players"] if p["name"] == player_name), None)
+    jogador = next((p for p in partida["players"] if p["name"] == player_data.get("nome")), None)
     if not jogador:
-        socketio.emit("error", {"msg": f"Jogador {player_name} não encontrado"}, room=game_code)
+        socketio.emit("error", {"msg": f"Jogador {player_data.get('nome')} não encontrado"}, room=game_code)
         return
 
-    # Verifica se acertou
     resposta_correta = carta["answer"] == resposta_idx
 
-    # Movimento e efeitos
     game_service.calcular_movimento(game_code, jogador, carta, resposta_correta)
     game_service.verificar_casa_especial(jogador, partida["tabuleiro"])
 
-    # Alterna turno
     proximo = game_service.proximo_turno(game_code)
 
-    # Envia atualização geral
     socketio.emit(
         "atualizacao_jogo",
         {
@@ -119,5 +121,4 @@ def responder_pergunta(data):
         room=game_code
     )
 
-    # Envia próxima pergunta
     game_service.enviar_pergunta_socket(game_code)

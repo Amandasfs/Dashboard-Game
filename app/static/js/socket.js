@@ -8,7 +8,7 @@ let socket = null;
 
 /**
  * Inicializa o Socket.IO
- * @param {string|null} game_code - Código da sala
+ * @param {string|null} game_code - Token da sala
  * @param {string|null} username - Nome do jogador
  * @param {number} avatarId - ID do avatar
  * @returns {Socket} socket
@@ -40,7 +40,7 @@ export function initSocket(game_code = null, username = null, avatarId = 1) {
 }
 
 // ====================================================================
-// ---------------------- EVENTOS DA SALA DE ESPERA -------------------
+// ---------------------- SALA DE ESPERA -----------------------------
 // ====================================================================
 
 export function onWaitingRoomUpdate(callback) {
@@ -52,15 +52,11 @@ export function onWaitingRoomUpdate(callback) {
 export function playerReady(game_code, username, isReady = true) {
     const s = initSocket();
     if (!s) return;
-    s.emit("player_ready", {
-        token: game_code,
-        username: username,
-        ready: isReady
-    });
+    s.emit("player_ready", { token: game_code, username, ready: isReady });
 }
 
 // ====================================================================
-// ------------------------- INÍCIO DE PARTIDA -------------------------
+// ------------------------- INÍCIO DE PARTIDA ------------------------
 // ====================================================================
 
 export function onGameStarting(callback) {
@@ -76,17 +72,16 @@ export function onStartGame(callback) {
 }
 
 // ====================================================================
-// ----------------------------- TABULEIRO ------------------------------
+// ----------------------------- TABULEIRO -----------------------------
 // ====================================================================
 
-// Atualização geral do jogo (posição dos peões, rodada, pontuação)
 export function onGameUpdate(callback) {
     const s = initSocket();
     if (!s) return;
     s.on("atualizacao_jogo", callback);
 }
 
-// Quando um jogador deve puxar uma carta
+// Quando o servidor solicita que o jogador puxe carta
 export function onDrawCard(callback) {
     const s = initSocket();
     if (!s) return;
@@ -100,7 +95,7 @@ export function onCardReceived(callback) {
     s.on("carta_enviada", callback);
 }
 
-// Movimento do peão no tabuleiro
+// Movimento de peão
 export function onPawnMove(callback) {
     const s = initSocket();
     if (!s) return;
@@ -108,32 +103,27 @@ export function onPawnMove(callback) {
 }
 
 // ====================================================================
-// ------------------------- AÇÕES DO JOGADOR ---------------------------
+// ------------------------- AÇÕES DO JOGADOR --------------------------
 // ====================================================================
 
 // Jogador solicita puxar carta
 export function drawCard(game_code, username) {
     const s = initSocket();
     if (!s) return;
-
-    s.emit("puxar_carta", {
-        game_code: game_code,
-        nome: username
-    });
+    s.emit("puxar_carta", { game_code, nome: username });
 }
 
 // Jogador envia resposta
-export function sendAnswer(game_code, player, respostaIndex, cardObj) {
+export function sendAnswer(game_code, playerObj, respostaIndex, cardObj) {
     const s = initSocket();
     if (!s) return;
-
     s.emit("responder_pergunta", {
-        game_code: game_code,
+        game_code,
         player: {
-            id: player.id,
-            nome: player.username,
-            avatar_id: player.avatar_id,
-            avatar_url: player.avatar_url
+            id: playerObj.id || null,
+            nome: playerObj.nome || playerObj.username || "Jogador",
+            avatar_id: playerObj.avatar_id || 1,
+            avatar_url: playerObj.avatar_url || `/static/img/avatars/avatar_${playerObj.avatar_id || 1}.png`
         },
         resposta: respostaIndex,
         carta: cardObj

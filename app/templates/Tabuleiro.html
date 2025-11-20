@@ -9,22 +9,27 @@
 </head>
 <body>
 <div class="game-container">
+    <!-- HEADER -->
     <div class="game-header">
         <h1 class="game-title">🎮 TABULEIRO DO JOGO</h1>
         <div class="turn-info" id="turnInfo">Carregando partida...</div>
     </div>
 
+    <!-- TABULEIRO -->
     <div class="board-container">
         <div class="board" id="board"></div>
     </div>
 
+    <!-- SIDEBAR -->
     <div class="sidebar">
+        <!-- CARTA ATUAL -->
         <div class="card-area">
             <h2 class="card-title">🃏 CARTA ATUAL</h2>
             <div class="card-display" id="cardText">Nenhuma carta puxada ainda...</div>
             <button class="btn-pixel" id="drawCardBtn">🎴 PUXAR CARTA</button>
         </div>
 
+        <!-- JOGADORES -->
         <div class="players-info">
             <h3 class="card-title">👥 JOGADORES</h3>
             <div id="playersList"></div>
@@ -32,11 +37,13 @@
     </div>
 </div>
 
-<!-- Modal da carta -->
-<div id="cardModal">
-    <div id="cardQuestion"></div>
-    <div id="cardOptions"></div>
-    <button id="closeCard" class="btn-pixel">Fechar</button>
+<!-- MODAL DE CARTA -->
+<div id="cardModal" class="modal-overlay">
+    <div class="card-box">
+        <div id="cardQuestion">Carregando pergunta...</div>
+        <div id="cardOptions"></div>
+        <button id="closeCard" class="btn-pixel">Fechar</button>
+    </div>
 </div>
 
 <script type="module" src="/static/js/tabuleiro.js"></script>

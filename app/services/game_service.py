@@ -169,25 +169,47 @@ class GameService:
     # -----------------------------------------
     # SocketIO
     # -----------------------------------------
-    def enviar_pergunta_socket(self, game_code):
+    def puxar_carta(self, game_code, player_name):
         partida = self.games.get(game_code)
         if not partida:
-            return
-        jogador = partida["players"][partida["turno"]]
+            return None
+
         carta = self.sortear_carta()
         if not carta:
-            return
+            return None
+
         partida["carta_atual"] = carta
+
+        # Emite carta para todos (ou só para o jogador?)
         self.socketio.emit(
-            "nova_pergunta",
+            "carta_enviada",
             {
-                "player": jogador["name"],
+                "player": player_name,
                 "question": carta["question"],
                 "options": carta["options"],
+                "answer": carta["answer"],  # para validação
+                "difficulty": carta.get("difficulty", "easy"),
                 "time": carta.get("time", 60)
             },
             room=game_code
         )
+        return {
+            "player": player_name,
+            "question": carta["question"],
+            "options": carta["options"],
+            "answer": carta["answer"],
+            "difficulty": carta.get("difficulty", "easy"),
+            "time": carta.get("time", 60)
+        }
+
+    def enviar_pergunta_socket(self, game_code):
+        """Agora só redireciona para puxar_carta do jogador atual"""
+        partida = self.games.get(game_code)
+        if not partida:
+            return
+
+        jogador = partida["players"][partida["turno"]]
+        self.puxar_carta(game_code, jogador["name"])
 
     # -----------------------------------------
     # BOTS
