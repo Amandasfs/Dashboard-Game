@@ -1,0 +1,8 @@
+flask
+flask-socketio
+python-socketio
+eventlet
+pymongo
+flask-login
+passlib
+python-dotenv

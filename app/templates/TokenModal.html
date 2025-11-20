@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrar em Partida - Pixel Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('https://art.pixilart.com/sr5z629d2ee02faws3.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        /* Título */
+        h2 {
+            color: #ff6b6b;
+            font-size: 24px;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b;
+            letter-spacing: 1px;
+            animation: title-glow 2s infinite alternate;
+        }
+        
+        @keyframes title-glow {
+            0% { text-shadow: 3px 3px 0 #000, 0 0 10px #ff6b6b; }
+            100% { text-shadow: 3px 3px 0 #000, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; }
+        }
+        
+        /* Caixa do formulário */
+        .form-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 4px solid #6aff6a;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 15px #6aff6a, inset 0 0 10px rgba(106, 255, 106, 0.3);
+            position: relative;
+            animation: form-glow 3s infinite;
+        }
+        
+        @keyframes form-glow {
+            0% { box-shadow: 0 0 15px #6aff6a, inset 0 0 10px rgba(106, 255, 106, 0.3); }
+            50% { box-shadow: 0 0 25px #6aff6a, 0 0 30px #6aff6a, inset 0 0 10px rgba(106, 255, 106, 0.5); }
+            100% { box-shadow: 0 0 15px #6aff6a, inset 0 0 10px rgba(106, 255, 106, 0.3); }
+        }
+        
+        .form-box::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #6aff6a;
+            border-radius: 16px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        /* Labels e inputs */
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        label {
+            color: #00d0ff;
+            font-size: 12px;
+            margin-bottom: 10px;
+            display: block;
+            text-shadow: 0 0 5px #00d0ff;
+        }
+        
+        .input-pixel {
+            width: 100%;
+            padding: 15px;
+            font-size: 12px;
+            font-family: 'Press Start 2P', cursive;
+            border: 3px solid #ff6b6b;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .input-pixel:focus {
+            outline: none;
+            box-shadow: 0 0 10px #ff6b6b;
+            border-color: #ff6b6b;
+        }
+        
+        .input-pixel::placeholder {
+            color: #aaa;
+        }
+        
+        /* Botões */
+        .btn-pixel {
+            width: 100%;
+            padding: 18px;
+            margin: 10px 0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #ff6b6b;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 2px 2px 0 #000;
+        }
+        
+        .btn-pixel::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid #ff6b6b;
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .btn-pixel:hover {
+            background: rgba(255, 107, 107, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn-pixel:active {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            border-color: #00d0ff;
+        }
+        
+        .btn-secondary::before {
+            border-color: #00d0ff;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(0, 208, 255, 0.2);
+        }
+        
+        /* Mensagem de erro */
+        .error {
+            color: #ff4d4d;
+            font-size: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 77, 77, 0.1);
+            border: 2px solid #ff4d4d;
+            border-radius: 6px;
+            text-shadow: 0 0 5px #ff4d4d;
+            min-height: 20px;
+            transition: all 0.3s;
+        }
+        
+        /* Elementos decorativos pixelados */
+        .pixel-corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            image-rendering: pixelated;
+        }
+        
+        .form-box .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #6aff6a;
+        }
+        
+        .form-box .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #6aff6a;
+        }
+        
+        .form-box .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #6aff6a;
+        }
+        
+        .form-box .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #6aff6a;
+        }
+        
+        .btn-pixel .corner-tl {
+            top: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-tr {
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-pixel .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background: #ff6b6b;
+        }
+        
+        .btn-secondary .corner-tl,
+        .btn-secondary .corner-tr,
+        .btn-secondary .corner-bl,
+        .btn-secondary .corner-br {
+            background: #00d0ff;
+        }
+        
+        /* Token info */
+        .token-info {
+            color: #6aff6a;
+            font-size: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(106, 255, 106, 0.1);
+            border: 2px solid #6aff6a;
+            border-radius: 6px;
+            text-shadow: 0 0 5px #6aff6a;
+        }
+        
+        /* Loading state */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 18px;
+            }
+            
+            .form-box {
+                padding: 20px;
+            }
+            
+            .btn-pixel {
+                font-size: 12px;
+                padding: 15px;
+            }
+            
+            .input-pixel {
+                font-size: 10px;
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h2 {
+                font-size: 16px;
+            }
+            
+            .form-box {
+                padding: 15px;
+            }
+            
+            .btn-pixel {
+                font-size: 10px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>🔑 Entrar em Partida</h2>
+
+        <div class="form-box">
+            <div class="pixel-corner corner-tl"></div>
+            <div class="pixel-corner corner-tr"></div>
+            <div class="pixel-corner corner-bl"></div>
+            <div class="pixel-corner corner-br"></div>
+
+            <form id="enterMatchForm">
+                <div class="form-group">
+                    <label for="token">TOKEN DA PARTIDA</label>
+                    <input type="text" id="token" class="input-pixel" placeholder="Digite o token aqui" required maxlength="8">
+                </div>
+
+                <button type="submit" class="btn-pixel" id="submitBtn">
+                    <div class="pixel-corner corner-tl"></div>
+                    <div class="pixel-corner corner-tr"></div>
+                    <div class="pixel-corner corner-bl"></div>
+                    <div class="pixel-corner corner-br"></div>
+                    🎮 ENTRAR NA PARTIDA
+                </button>
+            </form>
+
+            <div class="token-info">
+                💡 Peça o token para quem criou a partida
+            </div>
+
+            <p id="error" class="error"></p>
+        </div>
+
+        <button id="backBtn" class="btn-pixel btn-secondary">
+            <div class="pixel-corner corner-tl"></div>
+            <div class="pixel-corner corner-tr"></div>
+            <div class="pixel-corner corner-bl"></div>
+            <div class="pixel-corner corner-br"></div>
+            ↩️ VOLTAR
+        </button>
+    </div>
+
+    <script type="module">
+import { 
+    joinGame, 
+    showError, 
+    goTo, 
+    getQueryParam 
+} from "{{ url_for('static', filename='js/api/index.js') }}";
+
+// ============================
+// PEGAR USER E AVATAR
+// ============================
+const username =
+    localStorage.getItem("username") ||
+    getQueryParam("username") ||
+    "Jogador";
+
+const avatar_id =
+    parseInt(localStorage.getItem("selectedAvatar")) ||
+    parseInt(getQueryParam("avatar_id")) ||
+    1;
+
+// ============================
+// ELEMENTOS
+// ============================
+const form = document.getElementById("enterMatchForm");
+const tokenInput = document.getElementById("token");
+const submitBtn = document.getElementById("submitBtn");
+const errorBox = document.getElementById("error");
+const backBtn = document.getElementById("backBtn");
+
+// ============================
+// SUBMIT DO FORMULÁRIO
+// ============================
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const token = tokenInput.value.trim().toUpperCase();
+    errorBox.textContent = "";
+
+    if (!token || token.length < 4) {
+        showError("error", "❌ Token inválido");
+        return;
+    }
+
+    // Loading state
+    submitBtn.innerHTML = "🔄 ENTRANDO...";
+    submitBtn.classList.add("loading");
+
+    try {
+        // O formato EXATO que seu backend espera
+        const player = {
+            nome: username,
+            avatar_id: avatar_id
+        };
+
+        const data = await joinGame(token, player);
+
+        submitBtn.innerHTML = "✅ SUCESSO!";
+        submitBtn.style.borderColor = "#6aff6a";
+
+        // Navega para tela de espera carregando parâmetros corretos
+        setTimeout(() => {
+            goTo("/espera", {
+                game_code: token,
+                username: username,
+                avatar_id: avatar_id
+            });
+        }, 800);
+
+    } catch (err) {
+        showError("error", "❌ " + err);
+        submitBtn.innerHTML = "🎮 ENTRAR NA PARTIDA";
+        submitBtn.classList.remove("loading");
+    }
+});
+
+// ============================
+// BOTÃO VOLTAR
+// ============================
+backBtn.onclick = () => {
+    goTo("/home", { 
+        username, 
+        avatar_id 
+    });
+};
+
+// ============================
+// FORMATAÇÃO AUTOMÁTICA DO TOKEN
+// ============================
+tokenInput.addEventListener("input", function () {
+    this.value = this.value.toUpperCase();
+});
+
+// Foco automático
+tokenInput.focus();
+</script>
+</body>
+</html>

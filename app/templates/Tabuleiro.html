@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Tabuleiro - Pixel Game</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/tabuleiro.css">
+</head>
+<body>
+<div class="game-container">
+    <div class="game-header">
+        <h1 class="game-title">🎮 TABULEIRO DO JOGO</h1>
+        <div class="turn-info" id="turnInfo">Carregando partida...</div>
+    </div>
+
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="sidebar">
+        <div class="card-area">
+            <h2 class="card-title">🃏 CARTA ATUAL</h2>
+            <div class="card-display" id="cardText">Nenhuma carta puxada ainda...</div>
+            <button class="btn-pixel" id="drawCardBtn">🎴 PUXAR CARTA</button>
+        </div>
+
+        <div class="players-info">
+            <h3 class="card-title">👥 JOGADORES</h3>
+            <div id="playersList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal da carta -->
+<div id="cardModal">
+    <div id="cardQuestion"></div>
+    <div id="cardOptions"></div>
+    <button id="closeCard" class="btn-pixel">Fechar</button>
+</div>
+
+<script type="module" src="/static/js/tabuleiro.js"></script>
+</body>
+</html>
