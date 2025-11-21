@@ -1,4 +1,4 @@
-# Quiz: Você vs Bot
+# Quiz: Maquina de Turing
 
 Um jogo de perguntas e respostas baseado em **Máquinas de Turing**, onde o usuário compete contra um bot que tem 50% de chance de acertar cada pergunta.
 
