@@ -1,0 +1,68 @@
+<!-- static/index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz: Turing</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+
+    <header>
+      <h1>Quiz — Turing</h1>
+      <div class="hud">
+        <div id="scores">
+          Você: <span id="userScore">0</span> •
+          Bot: <span id="botScore">0</span>
+        </div>
+        <div id="lives">
+          Vidas: <span id="userLives">3</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Área principal do jogo -->
+    <div class="game-box">
+        <div id="timer" class="timer">15</div>
+
+        <div id="question" class="question"></div>
+
+        <!-- Opções exibidas durante a rodada -->
+        <div id="options-box" class="options"></div>
+
+        <!-- Feedback do turno do bot -->
+        <div id="bot-turn-box" class="bot-turn"></div>
+    </div>
+
+    <!-- Cartão e controles -->
+    <section id="game-area">
+
+      <div id="card" class="card">
+        <div id="difficultyTag" class="difficulty">—</div>
+        <h2 id="questionText">Clique em Iniciar para começar</h2>
+
+        <!-- Opções dentro do card -->
+        <div id="card-options" class="options"></div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn" class="btn">Iniciar Jogo</button>
+        <div id="messages" class="messages"></div>
+      </div>
+
+    </section>
+
+    <footer>
+      <small>
+        Regras: Você tem 3 vidas. As perguntas são aleatórias.
+        O bot tem 50% de chance de acertar. Quem fizer mais pontos vence.
+      </small>
+    </footer>
+
+  </main>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
