@@ -1,1 +1,2 @@
-O BRANCH CORRETO ONDE O JOGO ESTÁ É O BRANCH Quiz
+O branch correto do jogo é o **`Quiz`**:  
+[https://github.com/Amandasfs/Dashboard-Game/tree/Quiz](https://github.com/Amandasfs/Dashboard-Game/tree/Quiz)
